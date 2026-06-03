@@ -1,0 +1,38 @@
+---
+import Base from "../layouts/Base.astro";
+import { CHALLENGE } from "../lib/config";
+---
+
+<Base title="Register">
+  <div class="narrow">
+    <div class="section-head" style="margin-bottom:18px;">
+      <h2>Register · {CHALLENGE.name}</h2>
+      <p class="sub">Step 1 of 2 — pay your entry fee. Step 2 happens by email: we send you a magic link to set up your account.</p>
+    </div>
+
+    <form method="POST" action="/api/register" id="register-form" class="card" style="padding:22px;">
+      <div class="form-row">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required placeholder="you@example.com" autocomplete="email" />
+        <div class="hint">We'll send your confirmation and magic-link login here.</div>
+      </div>
+      <div class="form-row">
+        <label for="promo">Promo code (optional)</label>
+        <input type="text" id="promo" name="promo" placeholder={CHALLENGE.pricing.promoCode} autocapitalize="characters" />
+        <div class="hint">Apply <code>{CHALLENGE.pricing.promoCode}</code> for $10 off — ${(CHALLENGE.pricing.promoCents/100).toFixed(0)} instead of ${(CHALLENGE.pricing.listCents/100).toFixed(0)}.</div>
+      </div>
+
+      <div class="callout">
+        <strong style="color:var(--ink);">What you're paying for:</strong> All three rounds of {CHALLENGE.name}.
+        Refundable up to 24 hours before Round 1 begins. No refunds after.
+      </div>
+
+      <button type="submit" class="btn primary" style="margin-top:12px; width:100%;">
+        Continue to checkout
+      </button>
+      <div class="hint" style="text-align:center; margin-top:10px;">
+        Powered by Stripe. We never see your card details.
+      </div>
+    </form>
+  </div>
+</Base>

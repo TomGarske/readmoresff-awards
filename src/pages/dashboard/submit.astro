@@ -1,0 +1,38 @@
+---
+import Base from "../../layouts/Base.astro";
+import { getCurrentUser } from "../../lib/auth";
+
+const user = await getCurrentUser(Astro.cookies);
+if (!user) return Astro.redirect("/login", 303);
+---
+<Base title="Submit your story">
+  <div class="narrow">
+    <div class="section-head" style="margin-bottom:14px;">
+      <h2>Submit your story</h2>
+      <p class="sub">Round 1. 1,500-word limit. .doc / .docx / .txt / .rtf only. No author info anywhere in the file.</p>
+    </div>
+
+    <form method="POST" action="/api/submissions/upload" enctype="multipart/form-data" class="card" style="padding:22px;">
+      <div class="form-row">
+        <label for="title">Title</label>
+        <input type="text" id="title" name="title" required maxlength="200" placeholder="Your story title" />
+        <div class="hint">Must match the title on the title page of your file.</div>
+      </div>
+      <div class="form-row">
+        <label for="synopsis">Synopsis (1–2 sentences)</label>
+        <textarea id="synopsis" name="synopsis" required maxlength="280" rows="3" placeholder="A 1-2 sentence description of your story."></textarea>
+      </div>
+      <div class="form-row">
+        <label for="file">Story file</label>
+        <input type="file" id="file" name="file" required accept=".doc,.docx,.txt,.rtf" />
+        <div class="hint">Max 2 MB. We'll strip metadata before any judge sees it.</div>
+      </div>
+
+      <div class="callout">
+        <strong style="color:var(--ink);">Before you submit:</strong> Confirm your file contains the title and synopsis on a title page, the story body, and <strong>no author name anywhere</strong> (including document metadata). You can re-upload as many times as you like before the deadline; we take the latest.
+      </div>
+
+      <button type="submit" class="btn primary" style="width:100%;">Upload submission</button>
+    </form>
+  </div>
+</Base>

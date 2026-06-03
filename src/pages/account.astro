@@ -1,0 +1,39 @@
+---
+import Base from "../layouts/Base.astro";
+import { getCurrentUser } from "../lib/auth";
+const user = await getCurrentUser(Astro.cookies);
+if (!user) return Astro.redirect("/login", 303);
+---
+<Base title="My profile">
+  <div class="narrow">
+    <div class="section-head" style="margin-bottom:14px;">
+      <h2>My profile</h2>
+      <p class="sub">Pen name and mailing address are required before prizes can be paid.</p>
+    </div>
+    <form method="POST" action="/api/account/save" class="card" style="padding:22px;">
+      <div class="form-row">
+        <label for="legal_name">Legal name</label>
+        <input type="text" id="legal_name" name="legal_name" placeholder="As it appears on government ID" />
+        <div class="hint">Used for tax forms only. Never shown to judges.</div>
+      </div>
+      <div class="form-row">
+        <label for="pen_name">Pen name (optional)</label>
+        <input type="text" id="pen_name" name="pen_name" placeholder="If different from legal name" />
+        <div class="hint">This is how you'll be credited if you win.</div>
+      </div>
+      <div class="form-row">
+        <label for="city">City</label>
+        <input type="text" id="city" name="city" />
+      </div>
+      <div class="form-row">
+        <label for="country">Country</label>
+        <input type="text" id="country" name="country" />
+      </div>
+      <div class="form-row">
+        <label for="bio">Short bio (optional)</label>
+        <textarea id="bio" name="bio" rows="3" maxlength="500"></textarea>
+      </div>
+      <button type="submit" class="btn primary" style="width:100%;">Save profile</button>
+    </form>
+  </div>
+</Base>

@@ -1,0 +1,67 @@
+---
+import Base from "../../layouts/Base.astro";
+import { requireAdmin } from "../../lib/auth";
+import { adminSupabase } from "../../lib/supabase";
+
+const admin = await requireAdmin(Astro.cookies);
+if (!admin) return Astro.redirect("/login?next=/admin", 303);
+
+const sb = adminSupabase();
+const [
+  { count: writerCount },
+  { count: regCount },
+  { count: subCount },
+  { count: judgeCount },
+] = await Promise.all([
+  sb.from("profiles").select("id", { head: true, count: "exact" }),
+  sb.from("registrations").select("id", { head: true, count: "exact" }).not("paid_at", "is", null),
+  sb.from("submissions").select("id", { head: true, count: "exact" }).neq("status", "draft"),
+  sb.from("judges").select("id", { head: true, count: "exact" }),
+]);
+
+const { data: recentRegs } = await sb
+  .from("registrations")
+  .select("id, paid_at, amount_paid_cents, promo_applied, profiles(email)")
+  .not("paid_at", "is", null)
+  .order("paid_at", { ascending: false })
+  .limit(10);
+---
+<Base title="Admin">
+  <div class="wrap">
+    <div class="section-head" style="margin-bottom:14px;">
+      <h2>Admin</h2>
+      <p class="sub">Signed in as <strong>{admin.email}</strong></p>
+    </div>
+
+    <div class="grid grid-4" style="margin-bottom:24px;">
+      <div class="card"><div class="meta">Profiles</div><div style="font-size:28px;font-weight:800;">{writerCount ?? 0}</div></div>
+      <div class="card"><div class="meta">Paid registrations</div><div style="font-size:28px;font-weight:800;">{regCount ?? 0}</div></div>
+      <div class="card"><div class="meta">Submissions</div><div style="font-size:28px;font-weight:800;">{subCount ?? 0}</div></div>
+      <div class="card"><div class="meta">Judges</div><div style="font-size:28px;font-weight:800;">{judgeCount ?? 0}</div></div>
+    </div>
+
+    <div class="section-head" style="margin-bottom:10px;"><h2 style="font-size:18px;">Recent registrations</h2></div>
+    <table class="data-table">
+      <thead><tr><th>When</th><th>Email</th><th class="right">Paid</th><th>Promo?</th></tr></thead>
+      <tbody>
+        {recentRegs?.length ? recentRegs.map((r: any) => (
+          <tr>
+            <td>{r.paid_at ? new Date(r.paid_at).toLocaleString() : "—"}</td>
+            <td>{r.profiles?.email ?? "—"}</td>
+            <td class="right">${((r.amount_paid_cents ?? 0)/100).toFixed(2)}</td>
+            <td>{r.promo_applied ? "✓" : ""}</td>
+          </tr>
+        )) : (
+          <tr><td colspan="4" style="text-align:center;color:var(--ink-mute);padding:24px;">No registrations yet.</td></tr>
+        )}
+      </tbody>
+    </table>
+
+    <div style="margin-top:20px; display:flex; gap:10px; flex-wrap:wrap;">
+      <a href="/admin/submissions" class="btn ghost">Submissions →</a>
+      <a href="/admin/judges" class="btn ghost">Judges →</a>
+      <a href="/admin/groups" class="btn ghost">Groups & prompts →</a>
+      <a href="/dashboard" class="btn ghost">Back to writer dashboard</a>
+    </div>
+  </div>
+</Base>

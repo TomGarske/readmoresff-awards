@@ -1,0 +1,39 @@
+---
+import Base from "../../layouts/Base.astro";
+import { requireAdmin } from "../../lib/auth";
+import { adminSupabase } from "../../lib/supabase";
+
+const admin = await requireAdmin(Astro.cookies);
+if (!admin) return Astro.redirect("/login?next=/admin/judges", 303);
+
+const sb = adminSupabase();
+const { data: judges } = await sb
+  .from("judges")
+  .select("id, specialty_genres, notes, profiles(email, pen_name)")
+  .limit(200);
+---
+<Base title="Judges · Admin">
+  <div class="wrap">
+    <div class="section-head" style="margin-bottom:14px;">
+      <h2>Judges</h2>
+      <p class="sub">{judges?.length ?? 0} active</p>
+    </div>
+    <p>Judge invitations and scoring assignments will live here. For now, judges are created via SQL or the Supabase dashboard.</p>
+    <table class="data-table">
+      <thead><tr><th>Email</th><th>Pen name</th><th>Specialties</th><th>Notes</th></tr></thead>
+      <tbody>
+        {judges?.length ? judges.map((j: any) => (
+          <tr>
+            <td>{j.profiles?.email}</td>
+            <td>{j.profiles?.pen_name ?? "—"}</td>
+            <td>{j.specialty_genres?.join(", ") ?? "—"}</td>
+            <td>{j.notes ?? "—"}</td>
+          </tr>
+        )) : (
+          <tr><td colspan="4" style="text-align:center;color:var(--ink-mute);padding:24px;">No judges configured.</td></tr>
+        )}
+      </tbody>
+    </table>
+    <p style="margin-top:18px;"><a href="/admin">← Back to admin home</a></p>
+  </div>
+</Base>

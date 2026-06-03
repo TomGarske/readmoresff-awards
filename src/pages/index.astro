@@ -1,0 +1,217 @@
+---
+import Base from "../layouts/Base.astro";
+import { CHALLENGE } from "../lib/config";
+import { GENRES, THEMES, OBJECTS } from "../lib/prompts";
+
+const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("en-US", {
+  month: "long", day: "numeric", year: "numeric"
+});
+const fmtRange = (s: string, e: string) =>
+  `${new Date(s).toLocaleDateString("en-US", { month:"short", day:"numeric" })}–${new Date(e).toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" })}`;
+
+const prizeTotalCents = CHALLENGE.prizes.ladder.reduce((s, p) => s + p.cents, 0);
+const prizeTotalUsd = `$${(prizeTotalCents/100).toLocaleString()}`;
+---
+
+<Base title="The 1500 — Inaugural cycle" description="The ReadMoreSFF 1500: a 1,500-word speculative fiction writing challenge. Three rounds, 48-hour windows, ~$7K prize floor.">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-tag">Inaugural cycle · Registration opens August 2026</div>
+    <h1 class="hero-title">The ReadMoreSFF 1500</h1>
+    <p class="hero-sub">
+      A 1,500-word speculative-fiction writing challenge. Three rounds, 48 hours each.
+      Anonymous judging by working SFF editors. Top finishers featured on the
+      ReadMoreSFF Hugo/Nebula tracker alongside the awards we follow.
+    </p>
+    <div class="hero-cta">
+      <a class="btn primary" href="/register">Register — $35 with promo</a>
+      <a class="btn ghost" href="#how">How it works →</a>
+    </div>
+    <div class="hero-stats">
+      <div><div class="n">1,500</div><div class="l">word limit</div></div>
+      <div><div class="n">3 rounds</div><div class="l">48 hours each</div></div>
+      <div><div class="n">{prizeTotalUsd}</div><div class="l">prize floor</div></div>
+      <div><div class="n">10 + 10 + 10</div><div class="l">prompt combinations</div></div>
+    </div>
+  </div>
+
+  <!-- THE CHALLENGE -->
+  <section class="section" id="challenge">
+    <div class="section-head">
+      <h2>The Challenge</h2>
+      <p class="sub">One competition. One format. SFF-only. Three rounds of elimination.</p>
+    </div>
+    <div class="card" style="padding: 22px;">
+      <div style="display:flex; gap:14px; flex-wrap: wrap; align-items:center; margin-bottom: 18px;">
+        <span class="pill coming">Pre-launch</span>
+        <h3 style="margin:0;">{CHALLENGE.name}</h3>
+        <span class="meta" style="margin-left:auto;">1,500 words · three rounds · 48 hours</span>
+      </div>
+      <p>
+        Speculative-fiction only — sci-fi, fantasy, magical realism, and the spaces between.
+        At registration you join a randomly-formed group of ~40 writers. When Round 1 opens,
+        your group receives the same three-slot prompt: <strong>genre</strong>,
+        <strong>theme</strong>, and <strong>object</strong>. You have 48 hours to write an
+        original 1,500-word story. The top 10 in your group advance to Round 2 with detailed
+        judge feedback.
+      </p>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:24px; margin-top:18px;">
+        <div>
+          <div class="meta" style="color: var(--accent); margin-bottom:6px;">Entry fee</div>
+          <div style="font-size:24px; font-weight:800;">
+            ${(CHALLENGE.pricing.listCents / 100).toFixed(0)} list
+            <span style="color: var(--ink-mute); font-weight: 600; font-size:14px;">
+              · ${(CHALLENGE.pricing.promoCents / 100).toFixed(0)} with promo
+            </span>
+          </div>
+          <div class="sub" style="margin-top:4px;">{CHALLENGE.pricing.promoNote}</div>
+        </div>
+        <div>
+          <div class="meta" style="color: var(--accent); margin-bottom:6px;">Word limit</div>
+          <div style="font-size:24px; font-weight:800;">
+            {CHALLENGE.wordLimit} words
+            <span style="color: var(--ink-mute); font-weight: 600; font-size:14px;">
+              · 1–50 over: −10% · 51+ over: DQ
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROMPT STRUCTURE -->
+  <section class="section" id="prompts">
+    <div class="section-head">
+      <h2>The prompt slate</h2>
+      <p class="sub">10 genres × 10 themes × 10 objects = 1,000 unique prompt combinations. Your group draws one.</p>
+    </div>
+    <div class="grid grid-3">
+      <div class="card">
+        <h3 style="margin-bottom:10px;"><span style="color:var(--accent);">Genre</span> · 10 options</h3>
+        <ul style="margin:0; padding-left:18px; color:var(--ink-dim); font-size:13px; line-height:1.8;">
+          {GENRES.map(g => <li><strong style="color:var(--ink);">{g.name}</strong></li>)}
+        </ul>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:10px;"><span style="color:var(--accent);">Theme</span> · 10 options</h3>
+        <ul style="margin:0; padding-left:18px; color:var(--ink-dim); font-size:13px; line-height:1.8;">
+          {THEMES.map(t => <li><strong style="color:var(--ink);">{t.name}</strong></li>)}
+        </ul>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:10px;"><span style="color:var(--accent);">Object</span> · 10 options</h3>
+        <ul style="margin:0; padding-left:18px; color:var(--ink-dim); font-size:13px; line-height:1.8;">
+          {OBJECTS.map(o => <li><strong style="color:var(--ink);">{o.name}</strong></li>)}
+        </ul>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:16px;">
+      <strong style="color: var(--ink);">Sample assignment:</strong> Cyberpunk · The Vow Broken · A glass eye.
+      Every writer in your ~40-writer group works with the same three. Judging is comparative within the group only.
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="section" id="how">
+    <div class="section-head">
+      <h2>How it works</h2>
+      <p class="sub">Same elimination mechanic as NYC Midnight, redesigned around the 1,500-word format.</p>
+    </div>
+    <div class="grid grid-3">
+      <div class="card">
+        <div class="meta" style="color: var(--accent);">Round 1 · {fmtRange(CHALLENGE.calendar.round1.start, CHALLENGE.calendar.round1.end)}</div>
+        <h3>Get your prompt</h3>
+        <p>Random groups of ~40 writers. Everyone gets the same genre / theme / object. 48 hours to write 1,500 words.</p>
+        <p style="margin-top:8px;"><strong>Top 10 per group advance.</strong></p>
+      </div>
+      <div class="card">
+        <div class="meta" style="color: var(--accent);">Round 2 · {fmtRange(CHALLENGE.calendar.round2.start, CHALLENGE.calendar.round2.end)}</div>
+        <h3>Anonymous judging</h3>
+        <p>Stories are stripped of author info. Working SFF editors and authors judge against a published rubric.</p>
+        <p style="margin-top:8px;"><strong>Top 4 per group advance.</strong></p>
+      </div>
+      <div class="card">
+        <div class="meta" style="color: var(--accent);">Final · {fmtRange(CHALLENGE.calendar.finalRound.start, CHALLENGE.calendar.finalRound.end)}</div>
+        <h3>Final ranking</h3>
+        <p>One pool, open genre, single prompt. <strong>Top 10 ranked</strong> for prize money + ReadMoreSFF tracker listing.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRIZES -->
+  <section class="section" id="prizes">
+    <div class="section-head">
+      <h2>Prize ladder</h2>
+      <p class="sub">{prizeTotalUsd} committed prize floor. Scales upward with registration volume.</p>
+    </div>
+    <table class="prize-table">
+      <thead>
+        <tr><th>Place</th><th class="right">Prize</th></tr>
+      </thead>
+      <tbody>
+        {CHALLENGE.prizes.ladder.map(p => (
+          <tr>
+            <td>{p.place}{p.place===1?'st':p.place===2?'nd':p.place===3?'rd':'th'}</td>
+            <td class="right">${(p.cents/100).toLocaleString()}</td>
+          </tr>
+        ))}
+        <tr style="font-weight:700;">
+          <td>Total floor</td>
+          <td class="right">{prizeTotalUsd}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="callout good" style="margin-top:14px;">
+      <strong style="color: var(--ink);">Revenue-share clause:</strong> {CHALLENGE.prizes.revenueShareNote}
+    </div>
+  </section>
+
+  <!-- CALENDAR -->
+  <section class="section" id="calendar">
+    <div class="section-head">
+      <h2>Calendar</h2>
+      <p class="sub">Inaugural cycle. Subject to refinement before registration opens.</p>
+    </div>
+    <table class="data-table">
+      <tbody>
+        <tr><td><strong>Registration opens</strong></td><td>{fmtDate(CHALLENGE.calendar.registrationOpens)}</td></tr>
+        <tr><td><strong>Registration closes</strong></td><td>{fmtDate(CHALLENGE.calendar.registrationCloses)}</td></tr>
+        <tr><td><strong>Round 1 writing window</strong></td><td>{fmtRange(CHALLENGE.calendar.round1.start, CHALLENGE.calendar.round1.end)}</td></tr>
+        <tr><td>Round 1 results + feedback</td><td>{fmtDate(CHALLENGE.calendar.round1Results)}</td></tr>
+        <tr><td><strong>Round 2 writing window</strong></td><td>{fmtRange(CHALLENGE.calendar.round2.start, CHALLENGE.calendar.round2.end)}</td></tr>
+        <tr><td>Round 2 results + feedback</td><td>{fmtDate(CHALLENGE.calendar.round2Results)}</td></tr>
+        <tr><td><strong>Final round</strong></td><td>{fmtRange(CHALLENGE.calendar.finalRound.start, CHALLENGE.calendar.finalRound.end)}</td></tr>
+        <tr><td>Final results announced</td><td>{fmtDate(CHALLENGE.calendar.finalResults)}</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- RULES PREVIEW -->
+  <section class="section" id="rules">
+    <div class="section-head">
+      <h2>Rules at a glance</h2>
+      <p class="sub">Full contest rules + legal terms published before registration opens.</p>
+    </div>
+    <div class="grid grid-3">
+      <div class="card"><h3>1,500 words max</h3><p>No minimum. 1–50 over: −10% score penalty. 51+ over: disqualification. Word count is the lower of Microsoft Word and Google Docs counts.</p></div>
+      <div class="card"><h3>48 hours per round</h3><p>Round 1, 2, and Final each open Friday 11:59 PM ET and close Sunday 11:59 PM ET. Stories must be written within the window — no pre-existing work.</p></div>
+      <div class="card"><h3>Anonymous judging</h3><p>Author name appears nowhere in the story or title page. Pen names allowed if registered. Stories are stripped of metadata before judges see them.</p></div>
+      <div class="card"><h3>SFF-only</h3><p>Stories must clearly fit one of the 10 listed speculative-fiction genres. Cross-genre is fine; literary fiction with no speculative element is not.</p></div>
+      <div class="card"><h3>No AI</h3><p>No generative AI may be used to create the story, in whole or in part. Top-25 entries each round receive manual review. Disqualification with no refund if AI use is detected.</p></div>
+      <div class="card"><h3>You keep your rights</h3><p>Writers retain all rights. ReadMoreSFF licenses one-time use for the anthology and online journal. You may republish anywhere 10 days after results are announced.</p></div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="section">
+    <div style="text-align:center; padding: 30px 20px;">
+      <h2 style="margin: 0 0 8px;">Ready to compete?</h2>
+      <p style="color: var(--ink-dim); margin: 0 0 18px;">
+        Registration opens August 2026. Pre-register now to get the $35 promo locked in.
+      </p>
+      <a class="btn primary" href="/register">Pre-register — $35</a>
+    </div>
+  </section>
+
+</Base>

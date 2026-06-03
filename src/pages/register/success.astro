@@ -1,0 +1,25 @@
+---
+import Base from "../../layouts/Base.astro";
+const sessionId = Astro.url.searchParams.get("session_id");
+---
+<Base title="Registration complete">
+  <div class="narrow">
+    <div class="hero" style="margin-top: 30px;">
+      <div class="hero-tag">You're in</div>
+      <h1 class="hero-title">Welcome to The ReadMoreSFF 1500.</h1>
+      <p class="hero-sub">
+        Your entry is confirmed. We've sent a magic-link login to your email — click it
+        to finish setting up your account (pen name, mailing address for prize delivery).
+        You'll get group assignment when registration closes.
+      </p>
+      <div class="hero-cta">
+        <a class="btn primary" href="/dashboard">Go to dashboard</a>
+      </div>
+      {sessionId && (
+        <p style="color: var(--ink-mute); font-size:11px; margin-top:18px;">
+          Stripe session: <code>{sessionId}</code>
+        </p>
+      )}
+    </div>
+  </div>
+</Base>

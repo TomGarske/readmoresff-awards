@@ -1,0 +1,47 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title, description } = Astro.props;
+const t = title ? `${title} · ReadMoreSFF Awards` : "ReadMoreSFF Awards";
+const d = description ?? "The ReadMoreSFF 1500 — a 1,500-word speculative fiction writing challenge. Three rounds, 48-hour windows, $7,450 prize floor.";
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{t}</title>
+  <meta name="description" content={d} />
+</head>
+<body>
+  <div class="wrap">
+    <nav class="topnav">
+      <a class="brand" href="/">
+        <span class="brand-mark">●</span>
+        READMORESFF AWARDS
+        <span class="brand-tag">The 1500 · inaugural cycle</span>
+      </a>
+      <div class="topnav-links">
+        <a href="/#challenge">The Challenge</a>
+        <a href="/#how">How it works</a>
+        <a href="/#prizes">Prizes</a>
+        <a href="/#calendar">Calendar</a>
+        <a href="/dashboard">My account</a>
+        <a href="/register" class="cta primary">Register</a>
+      </div>
+    </nav>
+
+    <slot />
+
+    <footer class="site">
+      © 2026 ReadMoreSFF · <a href="https://readmoresff.org">readmoresff.org</a> · awards platform · open source on
+      <a href="https://github.com/TomGarske/readmoresff-awards">GitHub</a>
+    </footer>
+  </div>
+</body>
+</html>

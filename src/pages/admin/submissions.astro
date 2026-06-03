@@ -1,0 +1,42 @@
+---
+import Base from "../../layouts/Base.astro";
+import { requireAdmin } from "../../lib/auth";
+import { adminSupabase } from "../../lib/supabase";
+
+const admin = await requireAdmin(Astro.cookies);
+if (!admin) return Astro.redirect("/login?next=/admin/submissions", 303);
+
+const sb = adminSupabase();
+const { data: subs } = await sb
+  .from("submissions")
+  .select("id, title, status, word_count, submitted_at, registrations(id, profiles(email))")
+  .order("submitted_at", { ascending: false })
+  .limit(200);
+---
+<Base title="Submissions · Admin">
+  <div class="wrap">
+    <div class="section-head" style="margin-bottom:14px;">
+      <h2>Submissions</h2>
+      <p class="sub">{subs?.length ?? 0} entries · most recent first</p>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr><th>Submitted</th><th>Writer</th><th>Title</th><th>Status</th><th class="right">Words</th></tr>
+      </thead>
+      <tbody>
+        {subs?.length ? subs.map((s: any) => (
+          <tr>
+            <td>{s.submitted_at ? new Date(s.submitted_at).toLocaleString() : "—"}</td>
+            <td>{s.registrations?.profiles?.email ?? "—"}</td>
+            <td>{s.title ?? "—"}</td>
+            <td>{s.status}</td>
+            <td class="right">{s.word_count ?? "—"}</td>
+          </tr>
+        )) : (
+          <tr><td colspan="5" style="text-align:center;color:var(--ink-mute);padding:24px;">No submissions yet.</td></tr>
+        )}
+      </tbody>
+    </table>
+    <p style="margin-top:18px;"><a href="/admin">← Back to admin home</a></p>
+  </div>
+</Base>

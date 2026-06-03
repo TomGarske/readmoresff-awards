@@ -1,0 +1,47 @@
+---
+import Base from "../layouts/Base.astro";
+import { getCurrentUser, isAdminEmail } from "../lib/auth";
+
+const user = await getCurrentUser(Astro.cookies);
+if (!user) {
+  return Astro.redirect("/login", 303);
+}
+const isAdmin = isAdminEmail(user.email);
+---
+<Base title="Dashboard">
+  <div class="narrow">
+    <div class="section-head" style="margin-bottom:14px;">
+      <h2>Hi, {user.email}</h2>
+      <p class="sub">Your account home. Round-specific actions appear here once a round opens.</p>
+    </div>
+
+    {isAdmin && (
+      <div class="callout good">
+        <strong style="color:var(--ink);">Admin access detected.</strong>
+        <a href="/admin" style="margin-left:10px;">Open admin dashboard →</a>
+      </div>
+    )}
+
+    <div class="grid grid-3" style="margin-top:18px;">
+      <div class="card">
+        <h3>My registration</h3>
+        <p>Status: <strong style="color:var(--good);">Confirmed</strong></p>
+        <p style="margin-top:6px;">Group: assigned at registration close (Oct 19, 2026)</p>
+      </div>
+      <div class="card">
+        <h3>Profile</h3>
+        <p>Pen name, mailing address (for prize delivery), bio.</p>
+        <a href="/account" class="btn ghost" style="margin-top:10px; padding:6px 12px; font-size:12px;">Edit profile</a>
+      </div>
+      <div class="card">
+        <h3>Submit a story</h3>
+        <p>Active once Round 1 opens.</p>
+        <a href="/dashboard/submit" class="btn ghost" style="margin-top:10px; padding:6px 12px; font-size:12px;">Open uploader</a>
+      </div>
+    </div>
+
+    <form method="POST" action="/api/auth/sign-out" style="margin-top:24px; text-align:center;">
+      <button type="submit" class="btn ghost" style="padding:6px 14px; font-size:12px;">Sign out</button>
+    </form>
+  </div>
+</Base>

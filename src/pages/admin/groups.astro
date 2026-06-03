@@ -1,0 +1,40 @@
+---
+import Base from "../../layouts/Base.astro";
+import { requireAdmin } from "../../lib/auth";
+import { adminSupabase } from "../../lib/supabase";
+import { GENRES, THEMES, OBJECTS, lookupGenre, lookupTheme, lookupObject } from "../../lib/prompts";
+
+const admin = await requireAdmin(Astro.cookies);
+if (!admin) return Astro.redirect("/login?next=/admin/groups", 303);
+
+const sb = adminSupabase();
+const { data: groups } = await sb
+  .from("groups")
+  .select("id, number, prompt_genre, prompt_theme, prompt_object, rounds(kind)")
+  .order("number");
+---
+<Base title="Groups · Admin">
+  <div class="wrap">
+    <div class="section-head" style="margin-bottom:14px;">
+      <h2>Groups &amp; prompts</h2>
+      <p class="sub">{groups?.length ?? 0} groups configured · prompt slate: {GENRES.length} genres × {THEMES.length} themes × {OBJECTS.length} objects = {GENRES.length * THEMES.length * OBJECTS.length} unique combinations</p>
+    </div>
+    <table class="data-table">
+      <thead><tr><th>Round</th><th>Group</th><th>Genre</th><th>Theme</th><th>Object</th></tr></thead>
+      <tbody>
+        {groups?.length ? groups.map((g: any) => (
+          <tr>
+            <td>{g.rounds?.kind}</td>
+            <td>#{g.number}</td>
+            <td>{lookupGenre(g.prompt_genre)?.name ?? g.prompt_genre}</td>
+            <td>{lookupTheme(g.prompt_theme)?.name ?? g.prompt_theme}</td>
+            <td>{lookupObject(g.prompt_object)?.name ?? g.prompt_object}</td>
+          </tr>
+        )) : (
+          <tr><td colspan="5" style="text-align:center;color:var(--ink-mute);padding:24px;">No groups configured. Groups are generated at registration close.</td></tr>
+        )}
+      </tbody>
+    </table>
+    <p style="margin-top:18px;"><a href="/admin">← Back to admin home</a></p>
+  </div>
+</Base>
