@@ -12,6 +12,7 @@ export type RawScore = {
   prose: number | null;
   structure: number | null;
   total: number | null;
+  overridden_total?: number | null;   // when present, used in place of `total`
 };
 
 export type AggregatedScore = {
@@ -31,8 +32,10 @@ function median(xs: number[]): number {
 }
 
 export function aggregate(scores: RawScore[]): AggregatedScore {
+  // Use override when present; otherwise the judge's computed total
+  const totals = scores.map((s) => Number(s.overridden_total ?? s.total ?? 0));
   return {
-    median_total: median(scores.map((s) => Number(s.total ?? 0))),
+    median_total: median(totals),
     median_adherence: median(scores.map((s) => Number(s.prompt_adherence ?? 0))),
     median_originality: median(scores.map((s) => Number(s.originality ?? 0))),
     median_prose: median(scores.map((s) => Number(s.prose ?? 0))),

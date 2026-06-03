@@ -1,6 +1,6 @@
 # Feature completion review
 
-State as of the second scaffold push. Categories:
+State as of the third scaffold push.
 
 - ✅ **Built** — code exists and works locally once env vars are wired in
 - 🟨 **Scaffolded** — endpoints/UI exist but need real service config OR the next implementation pass to function end-to-end
@@ -8,169 +8,163 @@ State as of the second scaffold push. Categories:
 
 ---
 
-## Marketing site (`/`)
+## Marketing site
 
 | Feature | Status |
 |---|---|
-| Hero with brand, tagline, CTAs, stats | ✅ |
-| Challenge spec card (entry fee, word limit, format) | ✅ |
-| Prompt slate display (10 × 10 × 10) | ✅ |
-| 3-round funnel cards with dates | ✅ |
-| Prize ladder table | ✅ |
-| Inaugural calendar table | ✅ |
-| Rules-at-a-glance (6 cards) | ✅ |
-| Footer with GitHub + readmoresff.org link | ✅ |
-| FAQ section | ⬜ |
-| Judge bios section (once recruited) | ⬜ |
-| Past winners section | ⬜ *(post-cycle 1)* |
+| Landing page (`/`) | ✅ |
+| Hero, challenge spec, 10×10×10 prompt slate, prizes, calendar | ✅ |
+| Rules-at-a-glance | ✅ |
+| **Public FAQ (`/faq`)** | ✅ |
+| **Public judges page (`/judges`)** | ✅ |
+| **Judge application form (`/judges#apply`)** | ✅ |
+| Top nav links FAQ + Judges | ✅ |
 
 ## Writer auth + signup
 
 | Feature | Status |
 |---|---|
-| Magic-link login page (`/login`) | ✅ |
-| Send-link endpoint (`/api/auth/send-link`) | 🟨 *needs Supabase + Resend keys* |
-| Magic-link landing (`/auth/callback`) | ✅ |
-| Set-session cookie endpoint | ✅ |
-| Sign-out endpoint | ✅ |
-| Magic-link emails delivered | 🟨 *handled by Supabase Auth* |
-| Account profile page | ✅ |
-| Save-profile endpoint | ✅ |
-| Profile RLS (writer reads + writes own row only) | ✅ |
+| Magic-link login / send-link / callback / cookie session / sign-out | ✅ |
+| Account profile w/ pre-fill (legal name, pen name, website, additional writers, newsletter opt-in, timezone) | ✅ |
+| Profile RLS | ✅ |
 
 ## Registration + payment
 
 | Feature | Status |
 |---|---|
-| Register page | ✅ |
-| Promo code input + applied flag | ✅ |
-| Stripe Checkout session creation | 🟨 *needs Stripe secret + price config* |
-| Success page | ✅ |
-| Stripe webhook handler | 🟨 *needs `STRIPE_WEBHOOK_SECRET`* |
-| Auto-create profile + registration on payment | ✅ |
-| Send welcome email with magic link | ✅ |
-| Refund endpoint with 24h-before-R1 enforcement | ✅ |
+| Register page w/ first name, last name, location, website, newsletter opt-in | ✅ |
+| Stripe Checkout session w/ metadata | 🟨 *needs Stripe secret* |
+| Webhook hands off to welcomeEmail | 🟨 *needs `STRIPE_WEBHOOK_SECRET`* |
+| Rich welcome email (recap + receipt + add-to-calendar + timezone) | ✅ |
+| Refund endpoint w/ 24h-before-R1 enforcement, force-override | ✅ |
 | Refund admin UI | ✅ |
+| **Refund confirmation email** | ✅ |
 | Stripe Customer Portal embed | ⬜ |
 
 ## Submission flow
 
 | Feature | Status |
 |---|---|
-| Writer dashboard | ✅ |
-| Submit-story page | ✅ |
-| Upload endpoint with file validation | ✅ |
-| File type validation (.doc/.docx/.txt/.rtf) | ✅ |
-| File size cap (2 MB) | ✅ |
-| **Word counter (multi-format: .txt / .docx / .rtf)** | ✅ |
-| **Word-limit penalty + DQ enforcement** | ✅ |
-| **`.docx` metadata anonymization (core.xml, app.xml, comments, headers)** | ✅ |
-| **R2 upload (original + anonymized copies)** | 🟨 *S3-compatible path works; Worker binding deferred* |
-| Resubmit-overwrites-prior support | ✅ |
-| Confirmation email on upload | ⬜ |
+| Submit form w/ title, synopsis, file | ✅ |
+| Multi-format word counter (.txt / .docx via mammoth / .rtf) | ✅ |
+| Word-limit penalty (1-50: −10%, 51+: DQ) | ✅ |
+| .docx metadata anonymization | ✅ |
+| R2 upload (originals + anonymized) | 🟨 *S3-path works; worker binding deferred* |
+| Resubmit overwrites prior | ✅ |
+| **Submission confirmation email** | ✅ |
 
 ## Group & prompt assignment
 
 | Feature | Status |
 |---|---|
-| Schema | ✅ |
-| **Random group assignment algorithm** | ✅ |
-| **Group-size planner (target 40, min 20)** | ✅ |
-| **Distinct prompt draw (1000 combinations)** | ✅ |
-| **Admin endpoint `/api/admin/groups/generate` + dry-run** | ✅ |
-| **Admin UI button to trigger generation** | ✅ |
-| **Kickoff email endpoint + UI button** | ✅ |
-| Cron-based auto-trigger at registration close | ⬜ |
+| Random bucket assignment, distinct prompt draw | ✅ |
+| Admin generate/dry-run/kickoff/reminder buttons | ✅ |
+| **Reminder email (just-in-case backup)** | ✅ |
+| Cron auto-trigger at registration close | ⬜ |
 
 ## Judging
 
 | Feature | Status |
 |---|---|
-| Schema | ✅ |
-| Judge login (magic-link, same as writer) | ✅ |
-| **Judge dashboard listing assignments** | ✅ |
-| **Score page with 4-dimension rubric (25 pts each)** | ✅ |
-| **Score save endpoint with draft + final modes** | ✅ |
-| **Anonymized story download (signed R2 URL)** | ✅ |
-| **Judge assignment algorithm (load-balanced, specialty-aware)** | ✅ |
-| Feedback Markdown editor with autosave | 🟨 *manual save only* |
-| Browser-native rendering of `.docx` (no download) | ⬜ |
-| Conflict-of-interest flagging | ⬜ |
+| Judge dashboard | ✅ |
+| **In-browser .docx rendering (sandboxed iframe)** | ✅ |
+| 4-dimension rubric scoring | ✅ |
+| **Score autosave (3-sec debounced)** | ✅ |
+| **Conflict-of-interest flag + auto-release** | ✅ |
+| Save-draft vs submit-final | ✅ |
+| Load-balanced, specialty-aware judge assignment | ✅ |
+| Feedback markdown editor | ✅ |
+| **`/judges` public bios page** | ✅ |
+| **`/judges#apply` application form + admin notify** | ✅ |
 
 ## Score aggregation + advancement
 
 | Feature | Status |
 |---|---|
-| **Median-based score aggregation** | ✅ |
-| **Tiebreaker logic (adherence → originality → time)** | ✅ |
-| **`/api/admin/advance` endpoint with dry-run** | ✅ |
-| **Auto-mark submissions advanced / eliminated** | ✅ |
-| **Results email templates (advanced + eliminated)** | ✅ |
-| **Public `/results` page showing advance lists** | ✅ |
-| Admin "publish results" UI button | ⬜ *(CLI-only for now)* |
-| Final-round overall ranking + prize-place assignment | ⬜ |
+| Median-based aggregation | ✅ |
+| **Honors manual score overrides** | ✅ |
+| Tiebreaker (adherence → originality → time) | ✅ |
+| Round 1 / Round 2 advance-list publication | ✅ |
+| **Final-round overall ranking + prize-place assignment** | ✅ |
+| **Prize-winner email template** | ✅ |
+| **Honorable-mention email template** | ✅ |
+| Admin "publish results" UI button (rounds) | 🟨 *CLI-only* |
+| **Admin "publish final ranking" UI** | ✅ |
+| Public `/results` page | ✅ |
 
 ## Admin
 
 | Feature | Status |
 |---|---|
-| Admin gating via `ADMIN_EMAILS` env var | ✅ |
-| `tdgarske@gmail.com` set as admin on signup | ✅ |
-| Admin home with stat cards | ✅ |
-| Submissions list | ✅ |
+| Admin gating via env | ✅ |
+| Admin home w/ stat cards | ✅ |
+| Submissions list (links to per-submission page) | ✅ |
+| **Per-submission deep view `/admin/submissions/[id]`** | ✅ |
 | Judges list | ✅ |
-| Groups + prompts list with generation controls | ✅ |
-| **Refunds dashboard with one-click refund** | ✅ |
-| **Audit log viewer** | ✅ |
+| Groups + prompts list w/ generation + kickoff + reminder | ✅ |
+| Refunds dashboard | ✅ |
+| Audit log viewer | ✅ |
+| **Final ranking page (`/admin/final`)** | ✅ |
+| **Manual score override (modal + endpoint + audit log)** | ✅ |
 | Public results link from admin home | ✅ |
-| Manual score override UI | ⬜ |
 
-## Data model + RLS
+## Data model
 
 | Feature | Status |
 |---|---|
-| Schema: 11 tables + 2 enums | ✅ |
-| RLS policies for all tables | ✅ |
-| Seed: inaugural challenge + 3 rounds + admin flag | ✅ |
+| 11 core tables + 2 enums | ✅ |
+| RLS for all tables | ✅ |
 | `handle_new_user()` trigger | ✅ |
-| **Audit log inserts on key actions** | ✅ |
+| Audit log inserts on key actions | ✅ |
+| **Profile extensions (website, newsletter, timezone, etc.)** | ✅ |
+| **Judge extensions (display_name, photo_url, bios, public_visible)** | ✅ |
+| **`judge_applications` table + RLS** | ✅ |
+| **Assignment COI columns** | ✅ |
+| **Submission `final_place` + `final_prize_cents`** | ✅ |
+| **Score override columns (overridden_total, by, at, reason)** | ✅ |
 
 ## Email templates (Resend)
 
 | Feature | Status |
 |---|---|
-| Welcome email (after payment) | ✅ |
-| **Round kickoff email (with prompt)** | ✅ |
-| **Results email (advanced / eliminated)** | ✅ |
-| Round-2 / Round-3 instructions | ⬜ |
-| Refund confirmation | ⬜ |
-| Final prize confirmation | ⬜ |
+| Welcome (registration confirm) | ✅ |
+| Round kickoff w/ formatting rules + anti-AI banner | ✅ |
+| Kickoff reminder | ✅ |
+| Submission confirmation | ✅ |
+| Round results (advanced / eliminated) | ✅ |
+| **Prize winner** | ✅ |
+| **Honorable mention** | ✅ |
+| **Refund confirmation** | ✅ |
+| Round-2 / Round-3 specific instruction | ⬜ |
+
+## Calendar
+
+| Feature | Status |
+|---|---|
+| Google Calendar one-click add URL helper | ✅ |
+| Downloadable `.ics` endpoint per round | ✅ |
+| Linked from welcome email | ✅ |
 
 ## Infrastructure / deployment
 
 | Feature | Status |
 |---|---|
 | Astro 5 + Cloudflare adapter | ✅ |
-| TypeScript + strict config | ✅ |
-| Env example documented | ✅ |
-| Supabase client wrappers | ✅ |
-| Stripe client wrapper | ✅ |
-| Resend client wrapper | ✅ |
-| R2 helpers (S3-compatible path) | ✅ |
-| **R2 upload helper (PutObject, signed GETs)** | ✅ |
-| **`wrangler.toml` with R2 bindings declared** | ✅ |
-| **`docs/DEPLOY.md` end-to-end setup guide** | ✅ |
-| GitHub Pages deploy *(N/A — needs server runtime)* | ⬜ |
-| Cloudflare Pages deploy + custom domain | 🟨 *config ready; needs Tom to run `wrangler pages deploy`* |
+| Strict TypeScript | ✅ |
+| `.env.example` documented | ✅ |
+| Service wrappers (Supabase, Stripe, Resend, R2) | ✅ |
+| `wrangler.toml` w/ R2 bindings + secrets list | ✅ |
+| `docs/DEPLOY.md` end-to-end guide | ✅ |
+| Cloudflare Pages deploy | 🟨 *config ready; needs Tom to run `wrangler pages deploy`* |
 | Migrations CI / Supabase deploy step | ⬜ |
 | Scheduled cron triggers | ⬜ |
 
 ## Out-of-scope-for-MVP (defer to post-launch)
 
-- Forum (Discourse or Discord, separate)
-- Anti-AI detection beyond stated policy + manual review
+- Forum (Discourse or Discord, separate stack)
+- Anti-AI detection beyond stated policy + manual review (Originality.ai or GPTZero is post-cycle-1)
 - Anti-plagiarism (Copyscape API on top-25 per round)
-- Anthology generation
+- Anthology PDF generator
 - ReadMoreSFF Quarterly journal CMS
 - Multi-cycle / multi-challenge support
 - Internationalization
@@ -180,31 +174,32 @@ State as of the second scaffold push. Categories:
 
 ## What's actually wireable today
 
-Every code path needed for a writer to complete the round 1 happy path now exists:
+The complete end-to-end cycle now exists in code:
 
-1. Visit `/`, see the offer
-2. Click Register, pay via Stripe (test mode)
-3. Receive welcome email with magic link
-4. Sign in to `/dashboard`, fill out profile at `/account`
-5. (Admin generates groups + sends kickoff)
-6. Receive kickoff email with prompt
-7. Upload story at `/dashboard/submit` — word count, anonymization, R2 storage happen automatically
-8. (Admin assigns judges, judges score at `/judge/score/[id]`)
-9. (Admin publishes advance list, results emails go out)
-10. See results at `/results`
+1. **Marketing.** `/` shows the offer. `/faq` answers common questions. `/judges` shows the panel and the apply form.
+2. **Register.** Pay via Stripe (test mode). Welcome email lands with receipt + add-to-calendar + magic link.
+3. **Sign in.** Magic-link returns you to the dashboard. Profile editor at `/account` (pen name, mailing address, website, timezone, newsletter opt-in).
+4. **Admin: generate groups.** `/admin/groups` → dry-run → generate → "Send kickoff" → "Send reminder."
+5. **Writer: receive prompt.** Anti-AI banner, big prompt table, full formatting rules, hashtag, contact pattern.
+6. **Writer: upload story.** Word count + penalty enforced. .docx metadata stripped. R2 upload (originals + anonymized). Confirmation email.
+7. **Admin: assign judges.** `POST /api/admin/judges/assign` (CLI for now; UI button is fast follow).
+8. **Judges: read + score.** In-browser .docx rendering. Autosave every 3 sec. Conflict-of-interest flag releases the assignment. Submit-final locks scoring.
+9. **Admin: publish round results.** `POST /api/admin/advance` (CLI). Updates submission statuses, sends per-writer results emails, publishes the advance list to `/results`.
+10. **Admin: manual score override.** Per-submission page (`/admin/submissions/[id]`) shows every judge's scores; modal to override total + reason; audit log entry.
+11. **Admin: final ranking.** `/admin/final` → dry-run → compute & assign places → send winner / HM emails.
+12. **Writer: refund.** Admin clicks "Refund" on `/admin/refunds` (24h-before-R1 window enforced; force-override available). Refund confirmation email follows.
 
-Estimated time to wire everything once you've got the cloud accounts open:
-**~1 day** of focused config work. Then ~1 day for an internal test cycle
-with you + 2 fake writers + you-as-judge to shake out anything I missed.
+That's the complete loop. Operationally you still need to recruit judges, draft legal rules, fund the prize floor, and do the marketing — but the platform itself is complete enough for an inaugural cycle.
 
-## Real remaining work for a public cycle
+## Remaining engineering polish
 
-- Cron triggers (auto-open / auto-close rounds, auto-send kickoffs)
-- Word counter validation against the contest rule ("lower of Word and Google Docs counts")
-- Judge UI: in-browser .docx rendering, autosave
-- Final-round prize-place assignment
-- Stripe Customer Portal embed (so writers can self-serve refunds in the window)
-- FAQ + judge bios on the marketing page
-- Cloudflare Pages deploy from the dashboard
+1. **Admin button to publish round results** (the only thing left as CLI-only)
+2. **Admin button to assign judges** (same; CLI works)
+3. **Cron triggers** for auto-open / auto-close rounds
+4. **Stripe Customer Portal embed** for self-serve refunds
+5. **Multi-cycle support** (currently assumes one active challenge)
+6. **Round-2 / Round-3 specific kickoff copy** (current `kickoffEmail` works for all rounds but could be more specific)
+7. **Final-round prize-confirmation flow** (writer confirms mailing address before payout)
+8. **W-9 collection** for US winners over $600
 
-Estimated: **2-3 focused weeks** to a public-launchable state.
+Estimated remaining work: **2 focused weeks**, mostly polish + operational tooling.

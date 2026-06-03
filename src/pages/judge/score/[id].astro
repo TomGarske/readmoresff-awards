@@ -3,7 +3,6 @@ import Base from "../../../layouts/Base.astro";
 import { getCurrentUser } from "../../../lib/auth";
 import { adminSupabase } from "../../../lib/supabase";
 import { lookupGenre, lookupTheme, lookupObject } from "../../../lib/prompts";
-import { getSignedDownloadUrl } from "../../../lib/r2-upload";
 
 const user = await getCurrentUser(Astro.cookies);
 if (!user) return Astro.redirect("/login?next=/judge", 303);
@@ -11,7 +10,6 @@ if (!user) return Astro.redirect("/login?next=/judge", 303);
 const assignmentId = Astro.params.id;
 const sb = adminSupabase();
 
-// Confirm this assignment belongs to this judge
 const { data: judgeRow } = await sb
   .from("judges").select("id").eq("user_id", user.id).maybeSingle();
 if (!judgeRow) return Astro.redirect("/judge", 303);
@@ -19,7 +17,7 @@ if (!judgeRow) return Astro.redirect("/judge", 303);
 const { data: assignment } = await sb
   .from("assignments")
   .select(`
-    id, status,
+    id, status, coi_flagged,
     submissions(id, title, synopsis, word_count, anonymized_r2_key,
       groups:group_members(group_id, groups(number, prompt_genre, prompt_theme, prompt_object))
     ),
@@ -37,76 +35,137 @@ const g = grp ? lookupGenre(grp.prompt_genre)?.name : "—";
 const t = grp ? lookupTheme(grp.prompt_theme)?.name : "—";
 const o = grp ? lookupObject(grp.prompt_object)?.name : "—";
 
-// Generate a 1-hour signed URL for the anonymized file
-let downloadUrl: string | null = null;
-if (s?.anonymized_r2_key) {
-  try {
-    downloadUrl = await getSignedDownloadUrl(s.anonymized_r2_key, 60 * 60);
-  } catch (e) {
-    console.warn("Could not sign URL", e);
-  }
-}
-
 const score = assignment.scores?.[0] ?? null;
+const isFinal = !!score?.submitted_at;
 ---
 <Base title="Score submission">
-  <div class="narrow">
-    <div class="section-head" style="margin-bottom:14px;">
-      <h2>{s?.title ?? "Untitled"}</h2>
-      <p class="sub">Group {grp?.number ?? "?"} · {g} · {t} · {o} · {s?.word_count ?? "?"} words</p>
-    </div>
+  <div class="wrap">
+    <div style="display:grid;grid-template-columns:1fr 380px;gap:24px;align-items:start;">
 
-    <div class="card" style="margin-bottom:18px;">
-      <h3 style="margin-top:0;">Synopsis</h3>
-      <p style="color:var(--ink-dim);font-style:italic;margin:0;">{s?.synopsis ?? "—"}</p>
-    </div>
-
-    {downloadUrl ? (
-      <p><a class="btn primary" href={downloadUrl} target="_blank" rel="noopener">Download anonymized story (.docx)</a></p>
-    ) : (
-      <div class="callout bad">Story file not yet available.</div>
-    )}
-
-    <form method="POST" action="/api/judge/score" class="card" style="padding:22px;margin-top:18px;">
-      <input type="hidden" name="assignment_id" value={assignment.id} />
-
-      <h3 style="margin-top:0;">Rubric · 4 dimensions · 25 points each · 100 total</h3>
-
-      <div class="form-row">
-        <label for="prompt_adherence">Prompt adherence (1–25)</label>
-        <input type="number" id="prompt_adherence" name="prompt_adherence" min="1" max="25" required value={score?.prompt_adherence ?? ""} />
-        <div class="hint">Does the story unmistakably fit the assigned genre, hinge on the theme, and physically include the object?</div>
-      </div>
-      <div class="form-row">
-        <label for="originality">Originality (1–25)</label>
-        <input type="number" id="originality" name="originality" min="1" max="25" required value={score?.originality ?? ""} />
-        <div class="hint">Voice, premise, execution. Does the story feel like only this writer could have written it?</div>
-      </div>
-      <div class="form-row">
-        <label for="prose">Prose (1–25)</label>
-        <input type="number" id="prose" name="prose" min="1" max="25" required value={score?.prose ?? ""} />
-        <div class="hint">Sentence-level craft. Clarity, rhythm, image precision.</div>
-      </div>
-      <div class="form-row">
-        <label for="structure">Structure (1–25)</label>
-        <input type="number" id="structure" name="structure" min="1" max="25" required value={score?.structure ?? ""} />
-        <div class="hint">Story arc within 1,500 words. Setup, escalation, resolution.</div>
-      </div>
-      <div class="form-row">
-        <label for="feedback_md">Feedback (markdown allowed)</label>
-        <textarea id="feedback_md" name="feedback_md" rows="8" placeholder="100–300 words. Specific praise, specific cuts. The writer will read this verbatim.">{score?.feedback_md ?? ""}</textarea>
-      </div>
-
-      <div style="display:flex;gap:10px;">
-        <button type="submit" name="action" value="save_draft" class="btn">Save draft</button>
-        <button type="submit" name="action" value="submit_final" class="btn primary">Submit final score</button>
-        <a href="/judge" class="btn ghost">← Back</a>
-      </div>
-      {score?.submitted_at && (
-        <p class="hint" style="margin-top:10px;color:var(--good);">
-          Last submitted {new Date(score.submitted_at).toLocaleString()}. Re-submitting overwrites.
+      <!-- Left column: anonymized story rendered inline -->
+      <div>
+        <div class="section-head" style="margin-bottom:14px;">
+          <div class="meta" style="margin-bottom:4px;">Group {grp?.number ?? "?"} · {g} · {t} · {o}</div>
+          <h2 style="margin:0;">{s?.title ?? "Untitled"}</h2>
+          <p class="sub">{s?.word_count ?? "?"} words · synopsis: <em>{s?.synopsis ?? "—"}</em></p>
+        </div>
+        <iframe src={`/api/judge/story?submission=${s?.id}`}
+                sandbox="allow-same-origin"
+                style="width:100%;height:75vh;border:1px solid var(--line);border-radius:10px;background:#fff;"></iframe>
+        <p style="text-align:center;margin-top:8px;">
+          <a href={`/api/judge/story?submission=${s?.id}`} target="_blank" rel="noopener" style="font-size:11px;color:var(--ink-mute);">Open in new tab ↗</a>
         </p>
-      )}
-    </form>
+      </div>
+
+      <!-- Right column: scoring form -->
+      <div>
+        <form method="POST" action="/api/judge/score" id="score-form" class="card" style="padding:18px;position:sticky;top:18px;">
+          <input type="hidden" name="assignment_id" value={assignment.id} />
+
+          <h3 style="margin-top:0;font-size:14px;">Rubric · 25 pts each · 100 total</h3>
+
+          <div class="form-row" style="margin-bottom:10px;">
+            <label for="prompt_adherence">Prompt adherence (1–25)</label>
+            <input type="number" id="prompt_adherence" name="prompt_adherence" min="1" max="25" required value={score?.prompt_adherence ?? ""} />
+          </div>
+          <div class="form-row" style="margin-bottom:10px;">
+            <label for="originality">Originality (1–25)</label>
+            <input type="number" id="originality" name="originality" min="1" max="25" required value={score?.originality ?? ""} />
+          </div>
+          <div class="form-row" style="margin-bottom:10px;">
+            <label for="prose">Prose (1–25)</label>
+            <input type="number" id="prose" name="prose" min="1" max="25" required value={score?.prose ?? ""} />
+          </div>
+          <div class="form-row" style="margin-bottom:10px;">
+            <label for="structure">Structure (1–25)</label>
+            <input type="number" id="structure" name="structure" min="1" max="25" required value={score?.structure ?? ""} />
+          </div>
+          <div class="form-row" style="margin-bottom:10px;">
+            <label for="feedback_md">Feedback (markdown, 100-300 words)</label>
+            <textarea id="feedback_md" name="feedback_md" rows="6" placeholder="Specific praise, specific cuts. The writer will read this verbatim.">{score?.feedback_md ?? ""}</textarea>
+          </div>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+            <button type="submit" name="action" value="submit_final" class="btn primary" style="flex:1;">{isFinal ? "Re-submit" : "Submit final"}</button>
+            <a href="/judge" class="btn ghost" style="padding:8px 12px;">Back</a>
+          </div>
+
+          <div style="font-size:11px;color:var(--ink-mute);text-align:center;" id="save-status">
+            {isFinal ? `Final submitted ${new Date(score!.submitted_at!).toLocaleString()}.` : "Autosaves every 3 seconds."}
+          </div>
+
+          <hr style="border:none;border-top:1px solid var(--line);margin:14px 0;">
+          <details>
+            <summary style="font-size:12px;color:var(--ink-mute);cursor:pointer;">⚠️ Flag conflict of interest</summary>
+            <div style="margin-top:10px;">
+              <textarea id="coi-reason" rows="2" placeholder="Why you can't fairly judge this story (e.g. you know the writer)…" style="width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:6px 8px;border-radius:6px;font-size:12px;"></textarea>
+              <button type="button" id="coi-btn" class="btn ghost" style="margin-top:6px;width:100%;font-size:12px;">Flag &amp; release</button>
+            </div>
+          </details>
+        </form>
+      </div>
+
+    </div>
   </div>
+
+  <script>
+    const form = document.getElementById('score-form');
+    const status = document.getElementById('save-status');
+    const assignmentId = form.querySelector('input[name=assignment_id]').value;
+    let debounceTimer = null;
+    let lastSavedAt = null;
+
+    function readForm() {
+      return {
+        assignment_id: assignmentId,
+        prompt_adherence: form.elements.prompt_adherence.value,
+        originality: form.elements.originality.value,
+        prose: form.elements.prose.value,
+        structure: form.elements.structure.value,
+        feedback_md: form.elements.feedback_md.value,
+      };
+    }
+
+    async function autosave() {
+      try {
+        const res = await fetch('/api/judge/score-autosave', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(readForm()),
+        });
+        if (res.ok) {
+          const j = await res.json();
+          lastSavedAt = new Date(j.saved_at);
+          status.textContent = 'Saved at ' + lastSavedAt.toLocaleTimeString() + '.';
+        } else {
+          status.textContent = 'Autosave failed: ' + res.statusText;
+        }
+      } catch (e) {
+        status.textContent = 'Autosave error: ' + e.message;
+      }
+    }
+
+    function scheduleSave() {
+      clearTimeout(debounceTimer);
+      status.textContent = 'Saving…';
+      debounceTimer = setTimeout(autosave, 3000);
+    }
+
+    ['prompt_adherence','originality','prose','structure','feedback_md'].forEach(n => {
+      form.elements[n].addEventListener('input', scheduleSave);
+      form.elements[n].addEventListener('change', scheduleSave);
+    });
+
+    document.getElementById('coi-btn').addEventListener('click', async () => {
+      const reason = document.getElementById('coi-reason').value;
+      if (!confirm('Flag this assignment as a conflict of interest and release it back to admin for reassignment?')) return;
+      const res = await fetch('/api/judge/flag-coi', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ assignment_id: assignmentId, reason }),
+      });
+      if (res.ok) { alert('Flagged. Returning to dashboard.'); location.href = '/judge'; }
+      else alert('Could not flag: ' + res.statusText);
+    });
+  </script>
 </Base>

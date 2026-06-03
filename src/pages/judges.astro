@@ -1,0 +1,79 @@
+---
+import Base from "../layouts/Base.astro";
+import { adminSupabase } from "../lib/supabase";
+import { GENRES } from "../lib/prompts";
+
+const sb = adminSupabase();
+const { data: judges } = await sb
+  .from("judges")
+  .select("display_name, photo_url, bio_short, bio_long, specialty_genres, profiles(pen_name, city, country)")
+  .eq("active", true)
+  .eq("public_visible", true)
+  .order("display_name", { ascending: true });
+---
+<Base title="Judges">
+  <div class="wrap">
+    <div class="section-head" style="margin-bottom:24px;">
+      <h2>The judges</h2>
+      <p class="sub">Working SFF editors, published authors, and agents who read every advancing story.</p>
+    </div>
+
+    {judges?.length ? (
+      <div class="grid grid-3">
+        {judges.map((j: any) => (
+          <div class="card">
+            {j.photo_url && <img src={j.photo_url} alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover;margin-bottom:10px;" />}
+            <h3>{j.display_name ?? j.profiles?.pen_name ?? "—"}</h3>
+            {j.bio_short && <p style="margin-bottom:8px;">{j.bio_short}</p>}
+            {(j.specialty_genres?.length ?? 0) > 0 && (
+              <p style="color:var(--ink-mute);font-size:11px;text-transform:uppercase;letter-spacing:0.4px;margin:0;font-weight:600;">
+                Specialties: {j.specialty_genres.map((slug: string) => GENRES.find(g => g.slug === slug)?.name ?? slug).join(", ")}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+    ) : (
+      <div class="card" style="margin-bottom:24px;">
+        <p style="color:var(--ink-dim);font-size:13px;margin:0;">The inaugural judging panel is being recruited now. Check back in a few weeks.</p>
+      </div>
+    )}
+
+    <section class="section" id="apply" style="margin-top:48px;">
+      <div class="section-head">
+        <h2>Become a judge</h2>
+        <p class="sub">We're looking for working SFF editors, published authors, agents, and craft-aware readers for the inaugural cycle. Paid: $50–$200 per round depending on volume.</p>
+      </div>
+      <form method="POST" action="/api/judges/apply" class="card" style="padding:22px;">
+        <div class="form-row">
+          <label for="name">Name</label>
+          <input type="text" id="name" name="name" required />
+        </div>
+        <div class="form-row">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required />
+        </div>
+        <div class="form-row">
+          <label for="why_qualified">Why you'd be a good judge</label>
+          <textarea id="why_qualified" name="why_qualified" rows="4" required placeholder="Editing credits, publishing history, NYCM placings, MFA, working agent…"></textarea>
+        </div>
+        <div class="form-row">
+          <label>Subgenre specialties (check all that apply)</label>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;font-size:12px;color:var(--ink-dim);">
+            {GENRES.map(g => (
+              <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-weight:400;">
+                <input type="checkbox" name="specialties" value={g.slug} />
+                {g.name}
+              </label>
+            ))}
+          </div>
+        </div>
+        <div class="form-row">
+          <label for="social_links">Website / social (optional)</label>
+          <input type="text" id="social_links" name="social_links" placeholder="https://, @handle, etc." />
+        </div>
+        <button type="submit" class="btn primary" style="width:100%;">Submit application</button>
+      </form>
+    </section>
+  </div>
+</Base>

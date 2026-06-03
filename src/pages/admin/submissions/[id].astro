@@ -1,0 +1,141 @@
+---
+import Base from "../../../layouts/Base.astro";
+import { requireAdmin } from "../../../lib/auth";
+import { adminSupabase } from "../../../lib/supabase";
+import { lookupGenre, lookupTheme, lookupObject } from "../../../lib/prompts";
+
+const admin = await requireAdmin(Astro.cookies);
+if (!admin) return Astro.redirect("/login?next=/admin/submissions", 303);
+
+const submissionId = Astro.params.id;
+const sb = adminSupabase();
+
+const { data: sub } = await sb
+  .from("submissions")
+  .select(`
+    id, title, synopsis, word_count, status, submitted_at, final_place, final_prize_cents,
+    file_r2_key, anonymized_r2_key,
+    registrations(profiles(email, pen_name, legal_name)),
+    groups:group_members(group_id, groups(number, prompt_genre, prompt_theme, prompt_object))
+  `)
+  .eq("id", submissionId)
+  .single();
+
+if (!sub) return Astro.redirect("/admin/submissions", 303);
+
+const { data: assignments } = await sb
+  .from("assignments")
+  .select(`
+    id, status, coi_flagged, coi_reason,
+    judges(id, profiles(email)),
+    scores(id, prompt_adherence, originality, prose, structure, total, feedback_md, submitted_at, overridden_total, overridden_by, override_reason)
+  `)
+  .eq("submission_id", submissionId);
+
+const grp = sub.groups?.[0]?.groups;
+---
+<Base title={`Submission: ${sub.title ?? "Untitled"} · Admin`}>
+  <div class="wrap">
+    <div class="section-head" style="margin-bottom:14px;">
+      <h2>{sub.title ?? "Untitled"}</h2>
+      <p class="sub">
+        Author: {sub.registrations?.profiles?.email ?? "—"} ·
+        Status: {sub.status} ·
+        Words: {sub.word_count ?? "—"} ·
+        {sub.final_place && <span>Final place: <strong style="color:var(--accent);">#{sub.final_place}</strong> ({sub.final_prize_cents ? "$" + (sub.final_prize_cents/100).toLocaleString() : "—"})</span>}
+      </p>
+    </div>
+
+    <div class="card" style="padding:18px;margin-bottom:18px;">
+      <h3 style="margin-top:0;">Prompt &amp; group</h3>
+      <p>Group #{grp?.number ?? "—"} ·
+        Genre: <strong>{grp ? lookupGenre(grp.prompt_genre)?.name : "—"}</strong> ·
+        Theme: <strong>{grp ? lookupTheme(grp.prompt_theme)?.name : "—"}</strong> ·
+        Object: <strong>{grp ? lookupObject(grp.prompt_object)?.name : "—"}</strong>
+      </p>
+      <p><em>{sub.synopsis ?? "—"}</em></p>
+      <p style="margin-top:14px;">
+        <a class="btn ghost" href={`/api/judge/story?submission=${sub.id}`} target="_blank" rel="noopener">View anonymized story →</a>
+      </p>
+    </div>
+
+    <div class="section-head" style="margin-bottom:10px;"><h3>Judge scores</h3></div>
+    {assignments?.length ? (
+      <table class="data-table">
+        <thead><tr><th>Judge</th><th>Adherence</th><th>Originality</th><th>Prose</th><th>Structure</th><th>Total</th><th>Override</th><th>COI</th></tr></thead>
+        <tbody>
+          {assignments.map((a: any) => {
+            const s = a.scores?.[0];
+            return (
+              <tr>
+                <td>{a.judges?.profiles?.email ?? "—"}</td>
+                <td>{s?.prompt_adherence ?? "—"}</td>
+                <td>{s?.originality ?? "—"}</td>
+                <td>{s?.prose ?? "—"}</td>
+                <td>{s?.structure ?? "—"}</td>
+                <td><strong>{s?.overridden_total ?? s?.total ?? "—"}</strong></td>
+                <td>
+                  {s?.id ? (
+                    <button class="btn ghost override-btn" data-id={s.id} style="padding:3px 8px;font-size:11px;">Edit</button>
+                  ) : "—"}
+                </td>
+                <td>{a.coi_flagged ? "⚠️" : ""}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    ) : (
+      <p style="color:var(--ink-mute);">No judge assignments yet.</p>
+    )}
+
+    <p style="margin-top:18px;"><a href="/admin/submissions">← Back to submissions list</a></p>
+  </div>
+
+  <dialog id="override-dialog" style="background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:22px;max-width:420px;">
+    <h3 style="margin-top:0;">Manual override</h3>
+    <p style="font-size:12px;color:var(--ink-mute);">Used when a judge ghosts mid-round or two judges disagree by more than 20 points and a third can't be brought in. Original score is preserved; the override total is what counts in aggregation.</p>
+    <form id="override-form">
+      <input type="hidden" name="score_id" />
+      <div class="form-row">
+        <label for="overridden_total">Override total (1-100)</label>
+        <input type="number" name="overridden_total" min="1" max="100" required />
+      </div>
+      <div class="form-row">
+        <label for="override_reason">Reason (required)</label>
+        <textarea name="override_reason" rows="3" required></textarea>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button type="submit" class="btn primary">Save override</button>
+        <button type="button" class="btn ghost" id="cancel-override">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    const dialog = document.getElementById('override-dialog');
+    const form = document.getElementById('override-form');
+    document.querySelectorAll('.override-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        form.elements.score_id.value = btn.dataset.id;
+        dialog.showModal();
+      });
+    });
+    document.getElementById('cancel-override').addEventListener('click', () => dialog.close());
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const body = {
+        score_id: form.elements.score_id.value,
+        overridden_total: Number(form.elements.overridden_total.value),
+        override_reason: form.elements.override_reason.value,
+      };
+      const r = await fetch('/api/admin/score-override', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (r.ok) { dialog.close(); location.reload(); }
+      else alert('Override failed: ' + r.statusText);
+    });
+  </script>
+</Base>

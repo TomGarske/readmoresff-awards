@@ -1,0 +1,103 @@
+---
+import Base from "../../layouts/Base.astro";
+import { requireAdmin } from "../../lib/auth";
+import { adminSupabase } from "../../lib/supabase";
+import { CHALLENGE } from "../../lib/config";
+
+const admin = await requireAdmin(Astro.cookies);
+if (!admin) return Astro.redirect("/login?next=/admin/final", 303);
+
+const sb = adminSupabase();
+const { data: ch } = await sb.from("challenges").select("id").eq("slug", CHALLENGE.slug).single();
+const { data: finalRound } = ch
+  ? await sb.from("rounds").select("id").eq("challenge_id", ch.id).eq("kind", "final").maybeSingle()
+  : { data: null };
+
+const { data: subs } = finalRound
+  ? await sb
+      .from("submissions")
+      .select("id, title, final_place, final_prize_cents, registrations(profiles(email, pen_name))")
+      .eq("round_id", finalRound.id)
+      .order("final_place", { ascending: true, nullsLast: true })
+  : { data: [] };
+---
+<Base title="Final ranking · Admin">
+  <div class="wrap">
+    <div class="section-head" style="margin-bottom:14px;">
+      <h2>Final ranking</h2>
+      <p class="sub">Aggregates judge scores for the final round, assigns prize places per the ladder in <code>config.ts</code>, optionally sends winner emails.</p>
+    </div>
+
+    <div class="card" style="padding:18px;margin-bottom:18px;">
+      <h3 style="margin-top:0;">Prize ladder</h3>
+      <table class="prize-table">
+        <thead><tr><th>Place</th><th class="right">Prize</th></tr></thead>
+        <tbody>
+          {CHALLENGE.prizes.ladder.map(p => (
+            <tr>
+              <td>{p.place}{p.place===1?'st':p.place===2?'nd':p.place===3?'rd':'th'}</td>
+              <td class="right">${(p.cents/100).toLocaleString()}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+        <button type="button" id="dry-btn" class="btn ghost">Dry run (preview ranking)</button>
+        <button type="button" id="rank-btn" class="btn primary">Compute &amp; assign places</button>
+        <button type="button" id="email-btn" class="btn">Send winner emails</button>
+      </div>
+      <pre id="out" style="background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px;color:var(--ink-dim);font-size:11px;overflow:auto;max-height:300px;margin-top:14px;display:none;"></pre>
+    </div>
+
+    <h3 style="margin:24px 0 10px;">Current standings</h3>
+    <table class="data-table">
+      <thead><tr><th>Place</th><th>Author</th><th>Title</th><th class="right">Prize</th></tr></thead>
+      <tbody>
+        {subs?.length ? subs.map((s: any) => (
+          <tr>
+            <td>{s.final_place ? "#" + s.final_place : "—"}</td>
+            <td>{s.registrations?.profiles?.pen_name ?? s.registrations?.profiles?.email ?? "—"}</td>
+            <td>{s.title ?? "—"}</td>
+            <td class="right">{s.final_prize_cents ? "$" + (s.final_prize_cents/100).toLocaleString() : "—"}</td>
+          </tr>
+        )) : (
+          <tr><td colspan="4" style="text-align:center;color:var(--ink-mute);padding:24px;">No final submissions yet.</td></tr>
+        )}
+      </tbody>
+    </table>
+
+    <p style="margin-top:18px;"><a href="/admin">← Back to admin home</a></p>
+  </div>
+
+  <script>
+    const out = document.getElementById('out');
+    function show(label, data) {
+      out.style.display = 'block';
+      out.textContent = label + '\n' + JSON.stringify(data, null, 2);
+    }
+    async function call(body) {
+      const r = await fetch('/api/admin/final-rank', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      return { ok: r.ok, body: await r.json().catch(() => ({})) };
+    }
+    document.getElementById('dry-btn').onclick = async () => {
+      show('Computing dry run…', {});
+      show('DRY RUN', await call({ dryRun: true }));
+    };
+    document.getElementById('rank-btn').onclick = async () => {
+      if (!confirm('Assign final places? This overwrites prior assignments.')) return;
+      show('Assigning…', {});
+      const r = await call({});
+      show('ASSIGN', r);
+      if (r.ok) setTimeout(() => location.reload(), 1000);
+    };
+    document.getElementById('email-btn').onclick = async () => {
+      if (!confirm('Send prize / HM emails to every finalist? This cannot be undone.')) return;
+      show('Sending…', {});
+      show('EMAIL', await call({ sendEmails: true }));
+    };
+  </script>
+</Base>

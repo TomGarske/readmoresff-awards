@@ -28,7 +28,7 @@ const { data: subs } = await sb
           <tr>
             <td>{s.submitted_at ? new Date(s.submitted_at).toLocaleString() : "—"}</td>
             <td>{s.registrations?.profiles?.email ?? "—"}</td>
-            <td>{s.title ?? "—"}</td>
+            <td><a href={`/admin/submissions/${s.id}`}>{s.title ?? "—"}</a></td>
             <td>{s.status}</td>
             <td class="right">{s.word_count ?? "—"}</td>
           </tr>

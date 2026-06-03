@@ -1,0 +1,117 @@
+---
+import Base from "../layouts/Base.astro";
+import { CHALLENGE } from "../lib/config";
+
+const FAQ_GROUPS: { title: string; items: { q: string; a: string }[] }[] = [
+  {
+    title: "Registration & participation",
+    items: [
+      { q: "Who can enter?",
+        a: "Writers from anywhere in the world, 18+. Writers under 18 may participate with parental consent emailed to us before the round begins." },
+      { q: "What's the entry fee?",
+        a: `${"$"}${(CHALLENGE.pricing.listCents/100).toFixed(0)} list. ${"$"}${(CHALLENGE.pricing.promoCents/100).toFixed(0)} with the launch promo code <code>${CHALLENGE.pricing.promoCode}</code>. The single fee covers all three rounds.` },
+      { q: "Can I write under a pen name?",
+        a: "Yes. Enter your pen name in the registration form. We'll use it for any public display; your legal name stays in our records for tax / prize purposes only." },
+      { q: "Can teams enter?",
+        a: "Yes. List co-writers on your account page. Only the registered writer is eligible for prize money, but co-writers will be credited if you place." },
+      { q: "Can I get a refund?",
+        a: "Up to 24 hours before Round 1 begins — full refund. After that, no refunds." },
+    ],
+  },
+  {
+    title: "The prompt",
+    items: [
+      { q: "How are groups assigned?",
+        a: "When registration closes, all paid writers are randomly bucketed into groups of ~40. Each group draws one prompt — same genre, theme, and object for everyone in the group. Your group's prompt is delivered by email at the start of the round." },
+      { q: "What does \"the object must physically appear\" mean?",
+        a: "The object has to be present as something a character can touch, hold, wear, or interact with. A character mentioning the object in dialogue isn't enough; a sign with the object's name isn't enough. The exception: if the object appears in a story-within-a-story (grandfather telling a tale), it can be referenced in dialogue as long as it's clearly a physical object inside that nested story." },
+      { q: "What does \"the theme must hinge on\" mean?",
+        a: "The story should be impossible to retell without the theme. It's not a backdrop or a single line; it's the thing that gives the story its shape." },
+      { q: "How closely must I follow the assigned genre?",
+        a: "Closely. Elements from other genres are fine, but the dominant tone has to match. A story that reads as comedy when assigned horror will likely be disqualified. Suggested genre definitions are at <a href='/genres'>/genres</a>." },
+      { q: "Can I mix subgenres?",
+        a: "Absolutely. Hard SF with a fantasy reveal, urban fantasy with cyberpunk lighting — read the assignment as the floor, not the ceiling." },
+    ],
+  },
+  {
+    title: "Word count & formatting",
+    items: [
+      { q: "How do you count words?",
+        a: "We strip the title page (title + synopsis) and run the count through both Microsoft Word and Google Docs. The lower of the two is the official count." },
+      { q: "What happens if I go over 1,500 words?",
+        a: "1–50 words over: −10% score penalty. 51+ words over: disqualification. Excessive hyphenation, em-dashes, or missing spaces to bypass the count is also grounds for disqualification." },
+      { q: "What file format should I use?",
+        a: ".doc, .docx, .txt, or .rtf. Name the file your story's title (e.g. <code>Tennis.docx</code>). 12pt Courier, New Courier, or Times New Roman." },
+      { q: "Can I include images?",
+        a: "No. Text only." },
+      { q: "Can I use existing characters or settings?",
+        a: "Existing characters from other works (yours or others') are fine if the story itself is original. Reusing characters AND storylines is grounds for disqualification." },
+      { q: "Can I include profanity?",
+        a: "Yes. Adult judges, no language restrictions." },
+    ],
+  },
+  {
+    title: "AI",
+    items: [
+      { q: "Can I use AI to write my story?",
+        a: "No. Generative AI use in any part of the writing process is prohibited. Top-25 entries each round receive manual review. Disqualification with no refund if AI use is detected." },
+      { q: "Will my story be used to train AI?",
+        a: "No. Your submission is never used as training data for any AI system. Stored on Cloudflare R2 for the duration of the contest, then archived." },
+      { q: "Can I use grammar/spelling checkers like Grammarly?",
+        a: "Yes. Mechanical assistance (spell-check, grammar suggestions) is fine. AI ghostwriting, AI completion of prose, AI plot generation — not fine." },
+    ],
+  },
+  {
+    title: "Judging & advancement",
+    items: [
+      { q: "Who judges?",
+        a: "Working SFF editors, published authors, and agents. See <a href='/judges'>/judges</a> for the panel." },
+      { q: "How many judges read my story?",
+        a: "Two judges score each story independently. The median score is your aggregated score. If the judges disagree substantially, a third judge is brought in." },
+      { q: "What's the scoring rubric?",
+        a: "Four dimensions, 25 points each, 100 total: prompt adherence, originality, prose, structure. Specific feedback per dimension is delivered to every entrant after results are announced." },
+      { q: "How many advance per round?",
+        a: "Round 1: top 10 of ~40 per group. Round 2: top 4 of ~40 per group. Final: top 10 overall ranked." },
+      { q: "When are results announced?",
+        a: "Approximately 6 weeks after each round's submission deadline. Specific dates on the <a href='/#calendar'>calendar</a>." },
+    ],
+  },
+  {
+    title: "After submission",
+    items: [
+      { q: "How do I know my story was received?",
+        a: "Immediately after uploading you'll see a success page AND get a confirmation email. If you don't see one within a minute, check spam — and then re-upload to be safe." },
+      { q: "Can I resubmit if I find a typo?",
+        a: "Yes. Resubmit as many times as you like before the deadline. We take your latest upload for judging and archive earlier ones." },
+      { q: "Can I share my story before results are announced?",
+        a: "Wait 10 days after results are announced before sharing publicly (personal website, social, other contests). The internal forum is fine before that as it's authenticated-only." },
+      { q: "Who owns the rights?",
+        a: "You. ReadMoreSFF licenses one-time use for the anthology and online journal if you advance; otherwise, no rights are transferred." },
+    ],
+  },
+];
+---
+<Base title="FAQ">
+  <div class="narrow">
+    <div class="section-head" style="margin-bottom:24px;">
+      <h2>Frequently asked questions</h2>
+      <p class="sub">If your question isn't here, use the <a href="/contact">contact form</a> rather than emailing — it routes faster.</p>
+    </div>
+
+    {FAQ_GROUPS.map(group => (
+      <section style="margin-bottom:32px;">
+        <h3 style="margin:0 0 12px;color:var(--accent);font-size:14px;text-transform:uppercase;letter-spacing:0.5px;">{group.title}</h3>
+        {group.items.map(item => (
+          <details class="card" style="margin-bottom:8px;cursor:pointer;">
+            <summary style="font-weight:600;list-style:none;padding:4px 0;">{item.q}</summary>
+            <div set:html={item.a} style="color:var(--ink-dim);font-size:13px;line-height:1.65;margin-top:10px;"></div>
+          </details>
+        ))}
+      </section>
+    ))}
+
+    <p style="text-align:center;color:var(--ink-mute);font-size:11px;margin-top:32px;">
+      Last updated for the inaugural cycle of {CHALLENGE.name}. Items will be expanded as questions come in.
+    </p>
+  </div>
+</Base>
