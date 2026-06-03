@@ -1,8 +1,17 @@
 ---
 import Base from "../layouts/Base.astro";
 import { getCurrentUser } from "../lib/auth";
+import { adminSupabase } from "../lib/supabase";
+
 const user = await getCurrentUser(Astro.cookies);
 if (!user) return Astro.redirect("/login", 303);
+
+// Pull current profile to pre-fill
+const { data: profile } = await adminSupabase()
+  .from("profiles")
+  .select("legal_name, pen_name, city, country, bio, personal_website, additional_writers, newsletter_opt_in, timezone, referred_by, mailing_address")
+  .eq("id", user.id)
+  .single();
 ---
 <Base title="My profile">
   <div class="narrow">
@@ -13,25 +22,50 @@ if (!user) return Astro.redirect("/login", 303);
     <form method="POST" action="/api/account/save" class="card" style="padding:22px;">
       <div class="form-row">
         <label for="legal_name">Legal name</label>
-        <input type="text" id="legal_name" name="legal_name" placeholder="As it appears on government ID" />
+        <input type="text" id="legal_name" name="legal_name" value={profile?.legal_name ?? ""} placeholder="As it appears on government ID" />
         <div class="hint">Used for tax forms only. Never shown to judges.</div>
       </div>
       <div class="form-row">
         <label for="pen_name">Pen name (optional)</label>
-        <input type="text" id="pen_name" name="pen_name" placeholder="If different from legal name" />
+        <input type="text" id="pen_name" name="pen_name" value={profile?.pen_name ?? ""} placeholder="If different from legal name" />
         <div class="hint">This is how you'll be credited if you win.</div>
       </div>
-      <div class="form-row">
-        <label for="city">City</label>
-        <input type="text" id="city" name="city" />
+      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <label for="city">City</label>
+          <input type="text" id="city" name="city" value={profile?.city ?? ""} />
+        </div>
+        <div>
+          <label for="country">Country</label>
+          <input type="text" id="country" name="country" value={profile?.country ?? ""} />
+        </div>
       </div>
       <div class="form-row">
-        <label for="country">Country</label>
-        <input type="text" id="country" name="country" />
+        <label for="personal_website">Personal website</label>
+        <input type="text" id="personal_website" name="personal_website" value={profile?.personal_website ?? ""} placeholder="https://yourwriting.com" />
+      </div>
+      <div class="form-row">
+        <label for="additional_writers">Co-writers (comma-separated)</label>
+        <input type="text" id="additional_writers" name="additional_writers" value={(profile?.additional_writers ?? []).join(", ")} placeholder="If you're submitting as a team" />
+        <div class="hint">Co-writers are credited but only the registered writer is eligible for prizes.</div>
+      </div>
+      <div class="form-row">
+        <label for="timezone">Timezone</label>
+        <input type="text" id="timezone" name="timezone" value={profile?.timezone ?? ""} placeholder="America/Denver" />
+        <div class="hint">IANA name — we'll convert round deadlines for you in emails.</div>
       </div>
       <div class="form-row">
         <label for="bio">Short bio (optional)</label>
-        <textarea id="bio" name="bio" rows="3" maxlength="500"></textarea>
+        <textarea id="bio" name="bio" rows="3" maxlength="500">{profile?.bio ?? ""}</textarea>
+      </div>
+      <div class="form-row">
+        <label for="referred_by">How did you hear about us? (optional)</label>
+        <input type="text" id="referred_by" name="referred_by" value={profile?.referred_by ?? ""} />
+      </div>
+      <div class="form-row">
+        <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13px;">
+          <input type="checkbox" name="newsletter_opt_in" value="1" checked={profile?.newsletter_opt_in ? "" : null} /> Send me the ReadMoreSFF newsletter.
+        </label>
       </div>
       <button type="submit" class="btn primary" style="width:100%;">Save profile</button>
     </form>

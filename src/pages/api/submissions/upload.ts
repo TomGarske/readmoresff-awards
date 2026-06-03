@@ -1,9 +1,11 @@
 import type { APIRoute } from "astro";
-import { getCurrentUser, getAccessTokenFromCookies } from "../../../lib/auth";
-import { serverSupabase, adminSupabase } from "../../../lib/supabase";
+import { getCurrentUser } from "../../../lib/auth";
+import { adminSupabase } from "../../../lib/supabase";
 import { countByFilename, penaltyForOver } from "../../../lib/wordcount";
 import { anonymizeByFilename } from "../../../lib/anonymize";
 import { putObject } from "../../../lib/r2-upload";
+import { sendMail } from "../../../lib/email";
+import { submissionConfirmEmail } from "../../../lib/emails/templates";
 import { CHALLENGE } from "../../../lib/config";
 
 const ALLOWED = [".doc", ".docx", ".txt", ".rtf"];
@@ -116,6 +118,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   if (error) {
     console.error("Submission insert failed", error);
     return new Response("Could not save submission", { status: 500 });
+  }
+
+  // Send the confirmation email — best effort; failure here doesn't fail the upload.
+  try {
+    const tpl = submissionConfirmEmail({
+      title,
+      wordCount: counted.count,
+      penalty: wordPenalty,
+      roundKind: "round_1",
+      dashboardUrl: `${import.meta.env.SITE_URL ?? "https://readmoresff.org"}/dashboard`,
+    });
+    if (user.email) await sendMail({ to: user.email, subject: tpl.subject, html: tpl.html, text: tpl.text });
+  } catch (err) {
+    console.warn("Submission confirmation email failed", err);
   }
 
   return new Response(JSON.stringify({

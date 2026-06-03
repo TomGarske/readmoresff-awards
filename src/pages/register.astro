@@ -7,19 +7,43 @@ import { CHALLENGE } from "../lib/config";
   <div class="narrow">
     <div class="section-head" style="margin-bottom:18px;">
       <h2>Register · {CHALLENGE.name}</h2>
-      <p class="sub">Step 1 of 2 — pay your entry fee. Step 2 happens by email: we send you a magic link to set up your account.</p>
+      <p class="sub">A few quick details, then payment. After you pay you'll get a magic link to finish setting up your account.</p>
     </div>
 
-    <form method="POST" action="/api/register" id="register-form" class="card" style="padding:22px;">
+    <form method="POST" action="/api/register" class="card" style="padding:22px;">
       <div class="form-row">
         <label for="email">Email</label>
         <input type="email" id="email" name="email" required placeholder="you@example.com" autocomplete="email" />
-        <div class="hint">We'll send your confirmation and magic-link login here.</div>
+        <div class="hint">Where confirmations, the magic link, and your round prompts will land.</div>
+      </div>
+      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <label for="first_name">First name</label>
+          <input type="text" id="first_name" name="first_name" required autocomplete="given-name" />
+        </div>
+        <div>
+          <label for="last_name">Last name</label>
+          <input type="text" id="last_name" name="last_name" required autocomplete="family-name" />
+        </div>
+      </div>
+      <div class="form-row">
+        <label for="location">Location (City, State/Province, Country)</label>
+        <input type="text" id="location" name="location" placeholder="Denver, CO, United States" autocomplete="address-level2" />
+        <div class="hint">Displayed on the public participant list if you advance.</div>
+      </div>
+      <div class="form-row">
+        <label for="personal_website">Personal website (optional)</label>
+        <input type="text" id="personal_website" name="personal_website" placeholder="https://yourwriting.com" />
       </div>
       <div class="form-row">
         <label for="promo">Promo code (optional)</label>
         <input type="text" id="promo" name="promo" placeholder={CHALLENGE.pricing.promoCode} autocapitalize="characters" />
         <div class="hint">Apply <code>{CHALLENGE.pricing.promoCode}</code> for $10 off — ${(CHALLENGE.pricing.promoCents/100).toFixed(0)} instead of ${(CHALLENGE.pricing.listCents/100).toFixed(0)}.</div>
+      </div>
+      <div class="form-row">
+        <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13px;">
+          <input type="checkbox" name="newsletter_opt_in" value="1" /> Send me the ReadMoreSFF newsletter — challenge announcements only, no marketing fluff.
+        </label>
       </div>
 
       <div class="callout">

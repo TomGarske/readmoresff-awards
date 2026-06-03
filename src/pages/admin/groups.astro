@@ -32,6 +32,7 @@ const { data: groups } = await sb
         <button type="button" id="dry-run-btn" class="btn ghost">Dry run (preview)</button>
         <button type="button" id="generate-btn" class="btn primary">Generate groups</button>
         <button type="button" id="kickoff-btn" class="btn">Send kickoff emails</button>
+        <button type="button" id="reminder-btn" class="btn ghost">Send reminder (backup of kickoff)</button>
       </div>
       <pre id="generate-output" style="background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px;color:var(--ink-dim);font-size:11px;overflow:auto;max-height:240px;margin-top:14px;display:none;"></pre>
     </div>
@@ -91,6 +92,13 @@ const { data: groups } = await sb
       show('Sending…', {});
       const res = await call('/api/admin/groups/kickoff', { roundKind: kind });
       show('KICKOFF', res);
+    });
+    document.getElementById('reminder-btn').addEventListener('click', async () => {
+      const kind = document.getElementById('round-kind').value;
+      if (!confirm('Send reminder (backup-of-kickoff) emails to every writer in ' + kind + '?')) return;
+      show('Sending…', {});
+      const res = await call('/api/admin/groups/kickoff', { roundKind: kind, mode: 'reminder' });
+      show('REMINDER', res);
     });
   </script>
 </Base>

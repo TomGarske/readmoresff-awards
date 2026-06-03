@@ -15,6 +15,7 @@ export type CheckoutInput = {
   promoApplied: boolean;
   successUrl: string;
   cancelUrl: string;
+  metadata?: Record<string, string>;
 };
 
 export async function createCheckoutSession(input: CheckoutInput): Promise<{ url: string; id: string }> {
@@ -40,6 +41,7 @@ export async function createCheckoutSession(input: CheckoutInput): Promise<{ url
       },
     ],
     metadata: {
+      ...(input.metadata ?? {}),
       challenge_slug: input.challengeSlug,
       promo_applied: input.promoApplied ? "1" : "0",
     },
