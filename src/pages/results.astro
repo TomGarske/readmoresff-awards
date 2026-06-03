@@ -1,0 +1,66 @@
+---
+import Base from "../layouts/Base.astro";
+import { adminSupabase } from "../lib/supabase";
+import { lookupGenre, lookupTheme, lookupObject } from "../lib/prompts";
+
+const sb = adminSupabase();
+const { data: lists } = await sb
+  .from("advance_lists")
+  .select(`
+    id, finalized_at,
+    rounds(kind),
+    groups(number, prompt_genre, prompt_theme, prompt_object),
+    submission_ids
+  `)
+  .order("finalized_at", { ascending: false })
+  .limit(200);
+
+// Resolve submission titles
+const allIds = (lists ?? []).flatMap((l: any) => l.submission_ids ?? []);
+const { data: subs } = allIds.length
+  ? await sb
+      .from("submissions")
+      .select("id, title, registrations(profiles(pen_name, email))")
+      .in("id", allIds)
+  : { data: [] };
+
+const titleById = new Map<string, { title: string; author: string }>();
+for (const s of (subs ?? [])) {
+  const pen = (s as any).registrations?.profiles?.pen_name;
+  const email = (s as any).registrations?.profiles?.email ?? "—";
+  titleById.set((s as any).id, {
+    title: (s as any).title ?? "Untitled",
+    author: pen || email.split("@")[0],
+  });
+}
+---
+<Base title="Results">
+  <div class="wrap">
+    <div class="section-head" style="margin-bottom:14px;">
+      <h2>Round results</h2>
+      <p class="sub">Published advance lists. Stories shown by title + author.</p>
+    </div>
+
+    {lists?.length ? lists.map((l: any) => (
+      <div class="card" style="margin-bottom:14px;">
+        <div style="display:flex;gap:12px;align-items:baseline;margin-bottom:8px;flex-wrap:wrap;">
+          <h3 style="margin:0;">{l.rounds?.kind?.replace("_", " ").toUpperCase()} · Group {l.groups?.number}</h3>
+          <span class="meta">{l.groups ? `${lookupGenre(l.groups.prompt_genre)?.name} · ${lookupTheme(l.groups.prompt_theme)?.name} · ${lookupObject(l.groups.prompt_object)?.name}` : ""}</span>
+          <span class="meta" style="margin-left:auto;">{l.finalized_at ? new Date(l.finalized_at).toLocaleDateString() : ""}</span>
+        </div>
+        <ol style="margin:0;padding-left:22px;color:var(--ink-dim);">
+          {(l.submission_ids ?? []).map((id: string) => {
+            const t = titleById.get(id);
+            return t ? (
+              <li style="padding:3px 0;"><strong style="color:var(--ink);">{t.title}</strong> — {t.author}</li>
+            ) : (
+              <li style="padding:3px 0;color:var(--ink-mute);">(submission {id})</li>
+            );
+          })}
+        </ol>
+      </div>
+    )) : (
+      <div class="card"><p>No results published yet.</p></div>
+    )}
+  </div>
+</Base>

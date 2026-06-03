@@ -1,0 +1,62 @@
+---
+import Base from "../../layouts/Base.astro";
+import { requireAdmin } from "../../lib/auth";
+import { adminSupabase } from "../../lib/supabase";
+
+const admin = await requireAdmin(Astro.cookies);
+if (!admin) return Astro.redirect("/login?next=/admin/refunds", 303);
+
+const sb = adminSupabase();
+const { data: regs } = await sb
+  .from("registrations")
+  .select("id, paid_at, refunded_at, amount_paid_cents, profiles(email)")
+  .not("paid_at", "is", null)
+  .order("paid_at", { ascending: false })
+  .limit(200);
+---
+<Base title="Refunds · Admin">
+  <div class="wrap">
+    <div class="section-head" style="margin-bottom:14px;">
+      <h2>Refunds</h2>
+      <p class="sub">Refundable up to 24h before Round 1. Pass force=true to override (used after the window).</p>
+    </div>
+    <table class="data-table">
+      <thead><tr><th>Paid</th><th>Email</th><th class="right">Amount</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {regs?.length ? regs.map((r: any) => (
+          <tr>
+            <td>{r.paid_at ? new Date(r.paid_at).toLocaleString() : "—"}</td>
+            <td>{r.profiles?.email ?? "—"}</td>
+            <td class="right">${((r.amount_paid_cents ?? 0)/100).toFixed(2)}</td>
+            <td>{r.refunded_at ? <span class="pill closed">Refunded</span> : <span class="pill open">Paid</span>}</td>
+            <td>
+              {!r.refunded_at && (
+                <button class="btn ghost refund-btn" data-id={r.id} style="padding:4px 10px;font-size:12px;">Refund</button>
+              )}
+            </td>
+          </tr>
+        )) : (
+          <tr><td colspan="5" style="text-align:center;color:var(--ink-mute);padding:24px;">No paid registrations.</td></tr>
+        )}
+      </tbody>
+    </table>
+    <p style="margin-top:18px;"><a href="/admin">← Back to admin home</a></p>
+  </div>
+  <script>
+    document.querySelectorAll('.refund-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        if (!confirm('Refund this registration?')) return;
+        const force = confirm('Window-bypass (force) refund? OK = force; Cancel = honor window.');
+        const r = await fetch('/api/admin/refund', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ registrationId: id, force }),
+        });
+        const body = await r.json().catch(() => ({}));
+        if (r.ok) { alert('Refunded.'); location.reload(); }
+        else alert('Failed: ' + (body.error || r.statusText));
+      });
+    });
+  </script>
+</Base>

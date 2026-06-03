@@ -10,31 +10,87 @@ if (!admin) return Astro.redirect("/login?next=/admin/groups", 303);
 const sb = adminSupabase();
 const { data: groups } = await sb
   .from("groups")
-  .select("id, number, prompt_genre, prompt_theme, prompt_object, rounds(kind)")
+  .select("id, number, prompt_genre, prompt_theme, prompt_object, rounds(kind), group_members(count)")
   .order("number");
 ---
 <Base title="Groups · Admin">
   <div class="wrap">
     <div class="section-head" style="margin-bottom:14px;">
       <h2>Groups &amp; prompts</h2>
-      <p class="sub">{groups?.length ?? 0} groups configured · prompt slate: {GENRES.length} genres × {THEMES.length} themes × {OBJECTS.length} objects = {GENRES.length * THEMES.length * OBJECTS.length} unique combinations</p>
+      <p class="sub">{groups?.length ?? 0} groups configured · slate: {GENRES.length}×{THEMES.length}×{OBJECTS.length} = {GENRES.length * THEMES.length * OBJECTS.length} unique combinations</p>
     </div>
+
+    <div class="card" style="margin-bottom:18px;padding:18px;">
+      <h3 style="margin-top:0;">Generate groups for a round</h3>
+      <p class="sub">Randomly buckets paid registrations into groups of ~40 and draws distinct (genre, theme, object) prompts. Re-runnable; replaces existing groups for the same round.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px;">
+        <select id="round-kind" style="background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:8px 10px;border-radius:6px;">
+          <option value="round_1">Round 1</option>
+          <option value="round_2">Round 2</option>
+          <option value="final">Final</option>
+        </select>
+        <button type="button" id="dry-run-btn" class="btn ghost">Dry run (preview)</button>
+        <button type="button" id="generate-btn" class="btn primary">Generate groups</button>
+        <button type="button" id="kickoff-btn" class="btn">Send kickoff emails</button>
+      </div>
+      <pre id="generate-output" style="background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px;color:var(--ink-dim);font-size:11px;overflow:auto;max-height:240px;margin-top:14px;display:none;"></pre>
+    </div>
+
     <table class="data-table">
-      <thead><tr><th>Round</th><th>Group</th><th>Genre</th><th>Theme</th><th>Object</th></tr></thead>
+      <thead><tr><th>Round</th><th>Group</th><th>Members</th><th>Genre</th><th>Theme</th><th>Object</th></tr></thead>
       <tbody>
         {groups?.length ? groups.map((g: any) => (
           <tr>
             <td>{g.rounds?.kind}</td>
             <td>#{g.number}</td>
+            <td>{g.group_members?.[0]?.count ?? 0}</td>
             <td>{lookupGenre(g.prompt_genre)?.name ?? g.prompt_genre}</td>
             <td>{lookupTheme(g.prompt_theme)?.name ?? g.prompt_theme}</td>
             <td>{lookupObject(g.prompt_object)?.name ?? g.prompt_object}</td>
           </tr>
         )) : (
-          <tr><td colspan="5" style="text-align:center;color:var(--ink-mute);padding:24px;">No groups configured. Groups are generated at registration close.</td></tr>
+          <tr><td colspan="6" style="text-align:center;color:var(--ink-mute);padding:24px;">No groups configured yet. Use the buttons above to generate.</td></tr>
         )}
       </tbody>
     </table>
     <p style="margin-top:18px;"><a href="/admin">← Back to admin home</a></p>
   </div>
+
+  <script>
+    const out = document.getElementById('generate-output');
+    function show(label, data) {
+      out.style.display = 'block';
+      out.textContent = label + '\n' + JSON.stringify(data, null, 2);
+    }
+    async function call(path, body) {
+      const r = await fetch(path, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const j = await r.json().catch(() => ({ status: r.status, statusText: r.statusText }));
+      return { ok: r.ok, body: j };
+    }
+    document.getElementById('dry-run-btn').addEventListener('click', async () => {
+      const kind = document.getElementById('round-kind').value;
+      show('Generating dry-run…', {});
+      const res = await call('/api/admin/groups/generate', { roundKind: kind, dryRun: true });
+      show('DRY RUN', res);
+    });
+    document.getElementById('generate-btn').addEventListener('click', async () => {
+      const kind = document.getElementById('round-kind').value;
+      if (!confirm('This will replace any existing groups for ' + kind + '. Continue?')) return;
+      show('Generating…', {});
+      const res = await call('/api/admin/groups/generate', { roundKind: kind });
+      show('GENERATE', res);
+      if (res.ok) setTimeout(() => location.reload(), 800);
+    });
+    document.getElementById('kickoff-btn').addEventListener('click', async () => {
+      const kind = document.getElementById('round-kind').value;
+      if (!confirm('Send kickoff emails to every writer in ' + kind + '? This cannot be undone.')) return;
+      show('Sending…', {});
+      const res = await call('/api/admin/groups/kickoff', { roundKind: kind });
+      show('KICKOFF', res);
+    });
+  </script>
 </Base>

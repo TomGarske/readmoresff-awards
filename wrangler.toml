@@ -1,0 +1,41 @@
+# Cloudflare Workers / Pages configuration.
+# After `pnpm install`, `npx wrangler login` and run `wrangler pages deploy ./dist`.
+
+name = "readmoresff-awards"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Production environment variables — set with `wrangler pages secret put NAME` for each
+# (also set in the Cloudflare dashboard under Pages → Settings → Environment variables).
+
+[vars]
+SITE_URL = "https://awards.readmoresff.org"
+ADMIN_EMAILS = "tdgarske@gmail.com"
+CURRENT_CHALLENGE_SLUG = "readmoresff-1500-2026"
+
+# Secrets (do NOT commit values — set with `wrangler secret put`):
+#   SUPABASE_SERVICE_ROLE_KEY
+#   STRIPE_SECRET_KEY
+#   STRIPE_WEBHOOK_SECRET
+#   RESEND_API_KEY
+#   R2_ACCESS_KEY_ID
+#   R2_SECRET_ACCESS_KEY
+
+# R2 buckets — preferred binding-based path (zero-egress, no S3 SDK needed).
+[[r2_buckets]]
+binding = "SUBMISSIONS"
+bucket_name = "readmoresff-submissions"
+preview_bucket_name = "readmoresff-submissions-preview"
+
+[[r2_buckets]]
+binding = "ANONYMIZED"
+bucket_name = "readmoresff-anonymized"
+preview_bucket_name = "readmoresff-anonymized-preview"
+
+# Scheduled triggers — used for round kickoff emails, scoreboard refreshes, etc.
+# Configure under Cloudflare Pages → Functions → Cron Triggers in the dashboard
+# (Pages doesn't currently support cron via wrangler.toml directly; this section
+# is illustrative of what we want).
+#
+# [triggers]
+# crons = ["0 23 * * 5"]   # Fri 11pm UTC — round-open kickoff sweep

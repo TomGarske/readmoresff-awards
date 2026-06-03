@@ -1,0 +1,40 @@
+---
+import Base from "../../layouts/Base.astro";
+import { requireAdmin } from "../../lib/auth";
+import { adminSupabase } from "../../lib/supabase";
+
+const admin = await requireAdmin(Astro.cookies);
+if (!admin) return Astro.redirect("/login?next=/admin/audit", 303);
+
+const sb = adminSupabase();
+const { data: rows } = await sb
+  .from("audit_log")
+  .select("id, action, target_kind, target_id, payload, created_at, profiles:actor_id(email)")
+  .order("created_at", { ascending: false })
+  .limit(500);
+---
+<Base title="Audit log · Admin">
+  <div class="wrap">
+    <div class="section-head" style="margin-bottom:14px;">
+      <h2>Audit log</h2>
+      <p class="sub">{rows?.length ?? 0} actions · most recent first</p>
+    </div>
+    <table class="data-table">
+      <thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Target</th><th>Payload</th></tr></thead>
+      <tbody>
+        {rows?.length ? rows.map((r: any) => (
+          <tr>
+            <td>{new Date(r.created_at).toLocaleString()}</td>
+            <td>{r.profiles?.email ?? r.actor_id ?? "—"}</td>
+            <td><code>{r.action}</code></td>
+            <td><code>{r.target_kind}:{r.target_id?.slice?.(0, 8) ?? "—"}</code></td>
+            <td style="font-family:monospace;font-size:11px;color:var(--ink-dim);max-width:380px;overflow:hidden;text-overflow:ellipsis;">{r.payload ? JSON.stringify(r.payload) : "—"}</td>
+          </tr>
+        )) : (
+          <tr><td colspan="5" style="text-align:center;color:var(--ink-mute);padding:24px;">No audit entries.</td></tr>
+        )}
+      </tbody>
+    </table>
+    <p style="margin-top:18px;"><a href="/admin">← Back to admin home</a></p>
+  </div>
+</Base>

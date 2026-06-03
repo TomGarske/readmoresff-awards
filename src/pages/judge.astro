@@ -1,0 +1,73 @@
+---
+import Base from "../layouts/Base.astro";
+import { getCurrentUser } from "../lib/auth";
+import { adminSupabase } from "../lib/supabase";
+import { lookupGenre, lookupTheme, lookupObject } from "../lib/prompts";
+
+const user = await getCurrentUser(Astro.cookies);
+if (!user) return Astro.redirect("/login?next=/judge", 303);
+
+const sb = adminSupabase();
+const { data: judgeRow } = await sb
+  .from("judges")
+  .select("id, profiles(email, pen_name)")
+  .eq("user_id", user.id)
+  .maybeSingle();
+
+let assignments: any[] = [];
+if (judgeRow) {
+  const { data } = await sb
+    .from("assignments")
+    .select(`
+      id, status, due_at,
+      submissions(id, title, synopsis, word_count,
+        groups:group_members(group_id, groups(number, prompt_genre, prompt_theme, prompt_object))
+      ),
+      scores(id, total, submitted_at)
+    `)
+    .eq("judge_id", judgeRow.id)
+    .order("status", { ascending: true })
+    .limit(200);
+  assignments = data ?? [];
+}
+---
+<Base title="Judge dashboard">
+  <div class="wrap">
+    <div class="section-head" style="margin-bottom:14px;">
+      <h2>Judge dashboard</h2>
+      {judgeRow
+        ? <p class="sub">Signed in as <strong>{user.email}</strong> · {assignments.length} assignment(s)</p>
+        : <p class="sub" style="color:var(--bad)">You're signed in but not registered as a judge for the current challenge. Contact the admin to be added.</p>
+      }
+    </div>
+
+    {assignments.length > 0 ? (
+      <table class="data-table">
+        <thead><tr><th>Title</th><th>Prompt</th><th>Words</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          {assignments.map((a: any) => {
+            const s = a.submissions ?? {};
+            const grp = s.groups?.[0]?.groups;
+            const g = grp ? lookupGenre(grp.prompt_genre)?.name : "—";
+            const t = grp ? lookupTheme(grp.prompt_theme)?.name : "—";
+            const o = grp ? lookupObject(grp.prompt_object)?.name : "—";
+            const done = a.scores?.[0]?.submitted_at;
+            return (
+              <tr>
+                <td>{s.title ?? "—"}</td>
+                <td style="color:var(--ink-dim);font-size:12px;">{g} · {t} · {o}</td>
+                <td class="right">{s.word_count ?? "—"}</td>
+                <td>{done ? <span class="pill open">Scored</span> : <span class="pill coming">{a.status}</span>}</td>
+                <td><a href={`/judge/score/${a.id}`} class="btn ghost" style="padding:5px 10px;font-size:12px;">{done ? "Review" : "Score"} →</a></td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    ) : (
+      <div class="card"><p>{judgeRow ? "No active assignments. Check back when the round opens." : "Not yet a registered judge."}</p></div>
+    )}
+
+    <p style="margin-top:18px;"><a href="/dashboard">← Back to writer dashboard</a></p>
+  </div>
+</Base>
